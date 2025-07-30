@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>New Reality - Your Personal Growth Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              'brand-primary': '#4f46e5',
+              'brand-secondary': '#10b981',
+              'brand-light': '#f0f9ff',
+              'brand-dark': '#1e293b',
+              'brand-text': '#334155',
+              'brand-text-light': '#64748b',
+            },
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
+          },
+        },
+      }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@^19.1.0/",
+    "react": "https://esm.sh/react@^19.1.0",
+    "@google/genai": "https://esm.sh/@google/genai@^1.11.0",
+    "react-dom/": "https://esm.sh/react-dom@^19.1.0/",
+    "firebase/compat/app": "https://esm.sh/firebase@10.12.3/compat/app",
+    "firebase/compat/auth": "https://esm.sh/firebase@10.12.3/compat/auth",
+    "firebase/compat/firestore": "https://esm.sh/firebase@10.12.3/compat/firestore",
+    "firebase/": "https://esm.sh/firebase@^12.0.0/"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body class="bg-slate-50 font-sans">
+    <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+  <script>
+    // import firebase from 'firebase/compat/app';
+    // import 'firebase/compat/database';
+    
+
+    // Your web app's Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyDrk04Bi0Wsifz4rpPPAGuv0GC46NNtG_A",
+      authDomain: "named-archway-396913.firebaseapp.com",
+      databaseURL: "https://console.firebase.google.com/project/named-archway-396913/database/named-archway-396913-default-rtdb/data/~2F",
+      projectId: "named-archway-396913",
+      storageBucket: "named-archway-396913.appspot.com",
+      messagingSenderId: "75678041637",
+      appId: "1:75678041637:web:2eed039a1d58d1a7c9e1cc"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+
+    export const db = firebase.database(); // Realtime Database
+  </script>
+</body>
+</html>
