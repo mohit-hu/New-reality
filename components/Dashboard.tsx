@@ -1,4 +1,3 @@
-// Dashboard.tsx - Fixed version (removed unused declarations)
 import React, { useState, useEffect } from 'react';
 import { auth } from '../firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
@@ -8,12 +7,11 @@ import {
     saveDailyPlan,
     getPreviousDayTasksString,
     getPreviousDayReflectionString 
-} from '../services/firestoreService'; // Removed unused saveUserData
+} from '../services/firestoreService'; 
 import { getDailyPlan, getReflectionResponse } from '../services/geminiService';
-import { UserProfile, Goal, Task, DailyPlan } from '../types'; // Import proper types
-
+import { UserProfile, Goal, Task, DailyPlan } from '../types';  
 interface DashboardProps {
-    // Add any props if needed
+    
 }
 
 const Dashboard: React.FC<DashboardProps> = () => {
@@ -85,7 +83,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
     const toggleTaskComplete = async (taskId: string) => {
         if (!user || !dailyPlan) return;
 
-        const updatedTasks = tasks.map((t: Task) => // Fix: Add Task type to parameter 't'
+        const updatedTasks = tasks.map((t: Task) => 
             t.id === taskId ? { ...t, isCompleted: !t.isCompleted } : t
         );
 
@@ -110,16 +108,16 @@ const Dashboard: React.FC<DashboardProps> = () => {
     };
 
     const getTasksByType = () => {
-        const giaTasks = tasks.filter((task: Task) => task.isGIA); // Fix: Add Task type to parameter
-        const otherTasks = tasks.filter((task: Task) => !task.isGIA && !task.id.includes('quote')); // Fix: Add Task type
-        const quotes = tasks.filter((task: Task) => task.id.includes('quote')); // Fix: Add Task type
+        const giaTasks = tasks.filter((task: Task) => task.isGIA);
+        const otherTasks = tasks.filter((task: Task) => !task.isGIA && !task.id.includes('quote'));
+        const quotes = tasks.filter((task: Task) => task.id.includes('quote'));
         
         return { giaTasks, otherTasks, quotes };
     };
 
     const calculateProgress = () => {
-        const completedTasks = tasks.filter((task: Task) => task.isCompleted && !task.id.includes('quote')); // Fix: Add Task type
-        const totalTasks = tasks.filter((task: Task) => !task.id.includes('quote')); // Fix: Add Task type
+        const completedTasks = tasks.filter((task: Task) => task.isCompleted && !task.id.includes('quote'));  
+        const totalTasks = tasks.filter((task: Task) => !task.id.includes('quote'));  
         return totalTasks.length > 0 ? Math.round((completedTasks.length / totalTasks.length) * 100) : 0;
     };
 
@@ -212,41 +210,41 @@ const Dashboard: React.FC<DashboardProps> = () => {
                         </div>
                     </div>
                 )}
-
-                {/* Other Tasks */}
-                {otherTasks.length > 0 && (
-                    <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-                        <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
-                            📋 Supporting Tasks
-                        </h2>
-                        <div className="space-y-3">
-                            {otherTasks.map((task: Task) => ( // Fix: Add Task type to parameter
-                                <div
-                                    key={task.id}
-                                    className={`p-3 rounded-lg border ${
-                                        task.isCompleted 
-                                            ? 'bg-green-50 border-green-200' 
-                                            : 'bg-gray-50 border-gray-200'
-                                    }`}
-                                >
-                                    <div className="flex items-center space-x-3">
-                                        <input
-                                            type="checkbox"
-                                            checked={task.isCompleted}
-                                            onChange={() => toggleTaskComplete(task.id)}
-                                            className="h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
-                                        />
-                                        <p className={`${
-                                            task.isCompleted ? 'line-through text-gray-500' : 'text-gray-700'
-                                        }`}>
-                                            {task.text}
-                                        </p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+{/* Other Tasks */}
+{otherTasks.length > 0 && (
+    <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+        <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
+            📋 Supporting Tasks
+        </h2>
+        <div className="space-y-3">
+            {/* FIX: गलती वाली लाइन हटाकर ये use करें */}
+            {otherTasks.map((task: Task) => (
+                <div
+                    key={task.id}
+                    className={`p-3 rounded-lg border ${
+                        task.isCompleted 
+                            ? 'bg-green-50 border-green-200' 
+                            : 'bg-gray-50 border-gray-200'
+                    }`}
+                >
+                    <div className="flex items-center space-x-3">
+                        <input
+                            type="checkbox"
+                            checked={task.isCompleted}
+                            onChange={() => toggleTaskComplete(task.id)}
+                            className="h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
+                        />
+                        <p className={`${
+                            task.isCompleted ? 'line-through text-gray-500' : 'text-gray-700'
+                        }`}>
+                            {task.text}
+                        </p>
                     </div>
-                )}
+                </div>
+            ))}
+        </div>
+    </div>
+)}
 
                 {/* Daily Reflection */}
                 <div className="bg-white rounded-xl shadow-lg p-6">

@@ -1,4 +1,3 @@
-// geminiService.ts - Enhanced version with strict rate limiting
 import { GoogleGenAI, Type } from "@google/genai";
 import { UserProfile, Goal, Task, GeminiDailyPlanResponse, DailyPlan } from '../types';
 

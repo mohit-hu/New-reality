@@ -1,10 +1,9 @@
-// components/Onboarding.tsx - Interface definition
 import React, { useState } from 'react';
 import { UserProfile, Goal } from '../types';
 
 interface OnboardingProps {
     onComplete: (profile: UserProfile, goal: Goal) => Promise<void>;
-    loading: boolean; // Add this property to fix the error
+    loading: boolean;   
 }
 
 const Onboarding: React.FC<OnboardingProps> = ({ onComplete, loading }) => {

@@ -1,4 +1,3 @@
-// firestoreService.ts - Fixed version for Firebase v9+
 import { ref, get, set, update, orderByKey, endAt, limitToLast, query } from "firebase/database";
 import { db } from "../firebase";
 import { UserProfile, Goal, DailyPlan, DailyReflection } from "../types";
