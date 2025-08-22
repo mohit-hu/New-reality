@@ -15,6 +15,7 @@ export const getUserData = async (userId: string) => {
         };
     }
     
+    
     return {
         profile: { context: "Default context", identity: "Default identity" },
         goal: { title: "Default goal", tasks: [] }
@@ -34,6 +35,7 @@ export const getDailyPlan = async (userId: string, date: string): Promise<DailyP
     console.log('Fetched daily plan:', snapshot.val());
     return snapshot.val();
 };
+
 
 // Daily Plan save
 export const saveDailyPlan = async (userId: string, plan: DailyPlan) => {
@@ -93,4 +95,13 @@ export const getPreviousDayReflectionString = async (userId: string, yesterday: 
     }
     
     return undefined;
+};
+
+// System Health Check (mock implementation)
+export const healthCheck = async (): Promise<{ status: 'healthy' | 'degraded' | 'unhealthy'; details: string }> => {
+    // In a real app, this would check Firebase services, Gemini API status, etc.
+    return Promise.resolve({
+        status: 'healthy',
+        details: 'All systems are operational.'
+    });
 };

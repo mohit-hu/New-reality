@@ -10,6 +10,8 @@ import {
 } from '../services/firestoreService'; 
 import { getDailyPlan, getReflectionResponse } from '../services/geminiService';
 import { UserProfile, Goal, Task, DailyPlan } from '../types';  
+import TaskListPage from './TaskBoard';
+
 interface DashboardProps {
     
 }
@@ -217,7 +219,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
             📋 Supporting Tasks
         </h2>
         <div className="space-y-3">
-            {/* FIX: गलती वाली लाइन हटाकर ये use करें */}
+            
             {otherTasks.map((task: Task) => (
                 <div
                     key={task.id}
@@ -272,6 +274,8 @@ const Dashboard: React.FC<DashboardProps> = () => {
                         </div>
                     )}
                 </div>
+
+               
             </div>
         </div>
     );

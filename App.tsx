@@ -1,4 +1,11 @@
-// App.tsx - Complete working version
+import { AppSidebar } from "./components/AppSidebar";
+import AITrainerPage from "./components/AITrainerPage";
+
+
+import GoalTrackingPage from "./components/GoalTrackingPage";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import TaskListPage from "./components/TaskBoard"; 
+import { TaskHistory } from "./components/TaskHistory";
 import React, { useEffect, useState } from 'react';
 import { auth } from './firebase';
 import { onAuthStateChanged, User, signInAnonymously } from 'firebase/auth';
@@ -40,6 +47,7 @@ const App: React.FC = () => {
         showOnboarding: false,
         error: null
     });
+    const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
 
     // Authentication listener
     useEffect(() => {
@@ -195,6 +203,10 @@ const App: React.FC = () => {
         await generateNewDailyPlan(state.user.uid, state.userProfile, state.goal);
     };
 
+    const handleToggleSidebar = () => {
+        setSidebarCollapsed(prev => !prev);
+    };
+
     const clearError = () => {
         setState(prev => ({ ...prev, error: null }));
     };
@@ -246,18 +258,70 @@ const App: React.FC = () => {
     }
 
     // Main app - Dashboard
-    return (
-        <div className="app">
-            <Dashboard
-                user={state.user}
+
+
+return (
+  <BrowserRouter>
+    <div className="flex min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      {/* Sidebar fixed */}
+      <div className="fixed top-0 left-0 h-screen z-20">
+        <AppSidebar
+          userId={state.user.uid}
+          userName={state.userProfile.identity}
+          // userAvatar={state.userProfile.avatarUrl} // You can pass an avatar URL here if available
+          collapsed={isSidebarCollapsed}
+          onToggleCollapse={handleToggleSidebar}
+        />
+      </div>
+
+      {/* Main content area (margin-left = sidebar width) */}
+      <main className={`flex-1 p-6 overflow-y-auto transition-all duration-300 ${
+        isSidebarCollapsed ? 'ml-16' : 'ml-64'
+      }`}>
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <Dashboard
                 userProfile={state.userProfile}
                 goal={state.goal}
                 dailyPlan={state.dailyPlan}
                 tasks={state.tasks}
                 onRefreshPlan={refreshDailyPlan}
+              />
+            }
+          />
+          <Route
+            path="/history"
+            element={<TaskHistory userId={state.user.uid} days={5} />}
+          />
+          <Route path="/tasks" element={<TaskListPage userId={state.user.uid} />} />
+<Route
+          path="/GoalTrackingPage"
+          element={
+            <GoalTrackingPage 
+              userId={state.user.uid}
+              goal={state.goal}
+              userProfile={state.userProfile}
             />
-        </div>
-    );
+          } 
+        />
+     <Route 
+    path="/AITrainerPage"
+    element={
+      <AITrainerPage 
+        goal={state.goal} 
+        userProfile={state.userProfile}
+      />
+    } 
+  />
+
+        </Routes>
+      </main>
+    </div>
+  </BrowserRouter>
+);
+
 };
 
 export default App;
