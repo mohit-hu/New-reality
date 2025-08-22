@@ -8,7 +8,7 @@ interface TaskHistoryProps {
   days?: number; // Kitne previous din dikhaane hain, default 2
 }
 
-export function TaskHistory({ userId, days = 2 }: TaskHistoryProps) {
+export function TaskHistory({ userId, days = 7 }: TaskHistoryProps) {
   const [taskData, setTaskData] = useState<{ date: string; tasks: string[] }[]>([]);
   const [loading, setLoading] = useState(true);
 
