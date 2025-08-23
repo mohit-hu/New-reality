@@ -3,6 +3,7 @@ import { db } from "../firebase";
 import { UserProfile, Goal, DailyPlan, DailyReflection } from "../types";
 
 // User Data fetch
+// ...existing code...
 export const getUserData = async (userId: string) => {
     const userRef = ref(db, `users/${userId}`);
     const snapshot = await get(userRef);
@@ -10,24 +11,25 @@ export const getUserData = async (userId: string) => {
 
     console.log('getUserData snapshot:', data);
 
+    // If profile/goal exist return them, otherwise return null so UI can show onboarding
     if (data && (data.profile || data.goal)) {
         return {
-            profile: data.profile || { context: "Default context", identity: "Default identity" },
-            goal: data.goal || { title: "Default goal", tasks: [] }
+            profile: data.profile || null,
+            goal: data.goal || null
         };
     }
 
-    return {
-        profile: { context: "Default context", identity: "Default identity" },
-        goal: { title: "Default goal", tasks: [] }
-    };
+    return null;
 };
+// ...existing code...
 
 // User Data update
+// ...existing code...
 export const saveUserData = async (userId: string, profile: UserProfile, goal: Goal) => {
     const userRef = ref(db, `users/${userId}`);
-    await update(userRef, { profile, goal }); // Use update() function
+    await update(userRef, { profile, goal });
 };
+// ...existing code...
 
 // Daily Plan fetch
 export const getDailyPlan = async (userId: string, date: string): Promise<DailyPlan | null> => {
