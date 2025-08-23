@@ -1,5 +1,7 @@
 // src/components/GoalTrackingPage.tsx
-import  { useEffect, useState } from "react";
+'use client'
+
+import  { use, useEffect, useState } from "react";
 import { Progress } from "flowbite-react";
 import { getDailyPlan } from "../services/firestoreService";
 import { Goal, UserProfile, DailyPlan } from "../types";
