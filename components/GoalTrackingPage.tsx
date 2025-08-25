@@ -1,208 +1,267 @@
-// src/components/GoalTrackingPage.tsx
-import  { useEffect, useState } from "react";
-import { Progress } from "flowbite-react";
-import { getDailyPlan } from "../services/firestoreService";
-import { Goal, UserProfile, DailyPlan } from "../types";
+import React, { useState, useEffect } from 'react';
+import { UserProfile, Goal } from '../types';
+import { getDailyPlan, getUserData } from '../services/firestoreService';
+import { PageLoader } from './LoadingSpinner';
+import { GoalIcon, TrendingUpIcon } from './Icons';
+import TaskHistory from './TaskHistory';
 
-// Add missing type extensions
-declare module "flowbite-react" {
-  interface ProgressProps {
-    showProgressLabel?: boolean;
-    label?: string;
-    labelPosition?: "inside" | "outside";
-  }
-}
-
-interface GoalProgress {
-  date: string;
-  completedTasks: number;
-  totalTasks: number;
-  completionRate: number;
-}
-
-interface GoalTrackingProps {
+interface GoalTrackingPageProps {
   userId: string;
-  goal: Goal;
-  userProfile: UserProfile;
 }
 
-function getLastNDays(days = 30) {
-  const dates = [];
-  const today = new Date();
-  for (let i = days - 1; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(today.getDate() - i);
-    dates.push(d.toISOString().slice(0, 10));
-  }
-  return dates;
+interface ProgressData {
+  date: string;
+  completionRate: number;
+  totalTasks: number;
+  completedTasks: number;
 }
 
-export default function GoalTrackingPage({ userId, goal, userProfile }: GoalTrackingProps) {
-  const [progressData, setProgressData] = useState<GoalProgress[]>([]);
+const GoalTrackingPage: React.FC<GoalTrackingPageProps> = ({ userId }) => {
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [goal, setGoal] = useState<Goal | null>(null);
   const [loading, setLoading] = useState(true);
+  const [progressData, setProgressData] = useState<ProgressData[]>([]);
   const [overallProgress, setOverallProgress] = useState(0);
-  const [totalDaysTracked, setTotalDaysTracked] = useState(0);
-  const [totalTasksCompleted, setTotalTasksCompleted] = useState(0);
+  const [streak, setStreak] = useState(0);
 
   useEffect(() => {
-    async function fetchProgressData() {
-      setLoading(true);
-      const last30Days = getLastNDays(30);
-      const progressArray: GoalProgress[] = [];
-      let totalCompleted = 0;
-      let totalTasks = 0;
-      let daysWithData = 0;
+    const fetchData = async () => {
+      if (!userId) return;
 
-      for (const date of last30Days) {
-        try {
-          const plan = await getDailyPlan(userId, date);
-          
-          if (plan?.tasks) {
-            const completed = plan.tasks.filter(task => task.isCompleted).length;
-            const total = plan.tasks.length;
-            const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
+      try {
+        setLoading(true);
+        
+        // Get user data
+        const userData = await getUserData(userId);
+        setUserProfile(userData?.profile || null);
+        setGoal(userData?.goal || null);
 
-            progressArray.push({
-              date,
-              completedTasks: completed,
-              totalTasks: total,
-              completionRate: rate,
-            });
+        // Get last 30 days progress
+        const progressPromises = Array.from({ length: 30 }, (_, i) => {
+          const date = new Date();
+          date.setDate(date.getDate() - i);
+          const dateStr = date.toISOString().split('T')[0];
+          return getDailyPlan(userId, dateStr);
+        });
 
-            totalCompleted += completed;
-            totalTasks += total;
-            daysWithData++;
+        const plans = await Promise.all(progressPromises);
+        const validPlans = plans
+          .map((plan, index) => {
+            if (!plan) return null;
+            
+            const date = new Date();
+            date.setDate(date.getDate() - index);
+            
+            const totalTasks = plan.tasks.filter(t => !t.id.includes('quote')).length;
+            const completedTasks = plan.tasks.filter(t => t.isCompleted && !t.id.includes('quote')).length;
+            const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+            
+            return {
+              date: date.toISOString().split('T')[0],
+              completionRate,
+              totalTasks,
+              completedTasks
+            };
+          })
+          .filter(Boolean) as ProgressData[];
+
+        setProgressData(validPlans.reverse());
+
+        // Calculate overall progress (last 7 days average)
+        const recentProgress = validPlans.slice(-7);
+        const avgProgress = recentProgress.length > 0 
+          ? Math.round(recentProgress.reduce((sum, p) => sum + p.completionRate, 0) / recentProgress.length)
+          : 0;
+        setOverallProgress(avgProgress);
+
+        // Calculate streak (consecutive days with >80% completion)
+        let currentStreak = 0;
+        for (let i = validPlans.length - 1; i >= 0; i--) {
+          if (validPlans[i].completionRate >= 80) {
+            currentStreak++;
+          } else {
+            break;
           }
-        } catch (error) {
-          console.error(`Error fetching data for ${date}:`, error);
         }
+        setStreak(currentStreak);
+
+      } catch (error) {
+        console.error('Error fetching goal tracking data:', error);
+      } finally {
+        setLoading(false);
       }
+    };
 
-      setProgressData(progressArray);
-      setTotalDaysTracked(daysWithData);
-      setTotalTasksCompleted(totalCompleted);
-      setOverallProgress(totalTasks > 0 ? Math.round((totalCompleted / totalTasks) * 100) : 0);
-      setLoading(false);
-    }
+    fetchData();
+  }, [userId]);
 
-    if (userId) {
-      fetchProgressData();
-    }
-  }, [userId, goal]);
+  const getMotivationalMessage = (progress: number): string => {
+    if (progress >= 80) return "Excellent progress! You're almost there! 🎯";
+    if (progress >= 60) return "Great work! Keep up the momentum! 💪";
+    if (progress >= 40) return "Good start! Stay consistent for better results! 📈";
+    return "Every journey begins with a single step. You've got this! 🚀";
+  };
 
-  const recentWeekData = progressData.slice(-7);
-  const weeklyAverage = recentWeekData.length > 0 
-    ? Math.round(recentWeekData.reduce((sum, day) => sum + day.completionRate, 0) / recentWeekData.length)
-    : 0;
+  const getProgressColor = (rate: number): string => {
+    if (rate >= 80) return 'text-green-600 bg-green-100';
+    if (rate >= 60) return 'text-blue-600 bg-blue-100';
+    if (rate >= 40) return 'text-yellow-600 bg-yellow-100';
+    return 'text-gray-600 bg-gray-100';
+  };
+
+  const getProgressBarColor = (rate: number): string => {
+    if (rate >= 80) return 'bg-green-500';
+    if (rate >= 60) return 'bg-blue-500';
+    if (rate >= 40) return 'bg-yellow-500';
+    return 'bg-gray-400';
+  };
 
   if (loading) {
+    return <PageLoader message="Loading your progress..." />;
+  }
+
+  if (!userProfile || !goal) {
     return (
       <div className="max-w-4xl mx-auto p-6">
-        <div className="text-center">Loading your goal progress...</div>
+        <div className="bg-white rounded-xl shadow-lg p-8 text-center">
+          <GoalIcon className="text-gray-400 mx-auto mb-4" size={48} />
+          <h2 className="text-xl font-semibold text-gray-600 mb-2">
+            No Goal Set
+          </h2>
+          <p className="text-gray-500">
+            Please set up your profile and goal first to track your progress.
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
-      {/* Header Section */}
-      <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg p-6">
-        <h1 className="text-3xl font-bold mb-2">🎯 Your Goal Journey</h1>
-        <h2 className="text-xl mb-4">{goal.title}</h2>
-        <p className="text-blue-100">Identity: {userProfile.identity}</p>
-      </div>
-
-      {/* Progress Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white rounded-lg border p-6 text-center">
-          <div className="text-3xl font-bold text-green-600">{overallProgress}%</div>
-          <div className="text-gray-600">Overall Progress</div>
-        </div>
-        <div className="bg-white rounded-lg border p-6 text-center">
-          <div className="text-3xl font-bold text-blue-600">{totalDaysTracked}</div>
-          <div className="text-gray-600">Days Tracked</div>
-        </div>
-        <div className="bg-white rounded-lg border p-6 text-center">
-          <div className="text-3xl font-bold text-purple-600">{totalTasksCompleted}</div>
-          <div className="text-gray-600">Tasks Completed</div>
-        </div>
-      </div>
-
-      {/* Overall Progress Bar */}
-      <div className="bg-white rounded-lg border p-6">
-        <h3 className="text-xl font-semibold mb-4">🚀 Overall Goal Achievement</h3>
-        <Progress 
-          progress={overallProgress} 
-          size="lg" 
-          color="blue"
-          label={`${overallProgress}% Complete`}
-          labelPosition="outside"
-          showProgressLabel
-        />
-        <div className="mt-2 text-sm text-gray-600">
-          Based on {totalDaysTracked} days of task completion data
-        </div>
-      </div>
-
-      {/* Weekly Average */}
-      <div className="bg-white rounded-lg border p-6">
-        <h3 className="text-xl font-semibold mb-4">📊 Recent Week Average</h3>
-        <Progress 
-          progress={weeklyAverage} 
-          size="md" 
-          color={weeklyAverage >= 70 ? "green" : weeklyAverage >= 50 ? "yellow" : "red"}
-          label={`${weeklyAverage}% This Week`}
-          labelPosition="outside"
-          showProgressLabel
-        />
-      </div>
-
-      {/* Daily Progress History */}
-      <div className="bg-white rounded-lg border p-6">
-        <h3 className="text-xl font-semibold mb-4">📈 Daily Progress History</h3>
-        <div className="space-y-3 max-h-96 overflow-y-auto">
-          {progressData.length === 0 ? (
-            <div className="text-gray-500 text-center py-8">
-              No progress data available. Complete some daily tasks to see your progress!
-            </div>
-          ) : (
-            progressData.slice().reverse().map((day) => (
-              <div key={day.date} className="flex items-center justify-between p-3 border rounded">
-                <div className="flex flex-col">
-                  <div className="font-medium">{day.date}</div>
-                  <div className="text-sm text-gray-600">
-                    {day.completedTasks}/{day.totalTasks} tasks completed
-                  </div>
-                </div>
-                <div className="w-1/3">
-                  <Progress 
-                    progress={day.completionRate} 
-                    size="sm"
-                    color={day.completionRate === 100 ? "green" : day.completionRate >= 70 ? "blue" : day.completionRate >= 40 ? "yellow" : "red"}
-                  />
-                </div>
-                <div className="font-semibold text-right min-w-[60px]">
-                  {day.completionRate}%
-                </div>
+    <div className="max-w-6xl mx-auto p-6 space-y-6">
+      {/* Header */}
+      <div className="bg-white rounded-xl shadow-lg p-6">
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-800 mb-2 flex items-center gap-3">
+              <GoalIcon className="text-purple-600" size={32} />
+              Goal Tracking
+            </h1>
+            <p className="text-gray-600 mb-4">Monitor your progress towards your new reality</p>
+            
+            <div className="space-y-2">
+              <div>
+                <span className="text-sm font-medium text-gray-500">Your Goal:</span>
+                <p className="text-lg font-semibold text-gray-800">{goal.title}</p>
               </div>
-            ))
-          )}
+              <div>
+                <span className="text-sm font-medium text-gray-500">Identity:</span>
+                <p className="text-base text-gray-700">{userProfile.identity}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="text-right">
+            <div className="text-4xl font-bold text-purple-600">{overallProgress}%</div>
+            <div className="text-sm text-gray-500">7-day Average</div>
+          </div>
+        </div>
+
+        {/* Progress Bar */}
+        <div className="mt-6">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm font-medium text-gray-600">Overall Progress</span>
+            <span className="text-sm text-gray-500">{overallProgress}/100%</span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-3">
+            <div
+              className={`h-3 rounded-full transition-all duration-500 ${getProgressBarColor(overallProgress)}`}
+              style={{ width: `${overallProgress}%` }}
+            ></div>
+          </div>
+        </div>
+
+        {/* Motivational Message */}
+        <div className="mt-4 p-4 bg-purple-50 rounded-lg border border-purple-200">
+          <p className="text-center text-purple-800 font-medium">
+            {getMotivationalMessage(overallProgress)}
+          </p>
         </div>
       </div>
 
-      {/* Motivational Section */}
-      <div className="bg-gradient-to-r from-green-400 to-blue-500 text-white rounded-lg p-6 text-center">
-        <h3 className="text-xl font-bold mb-2">💪 Keep Going!</h3>
-        <p className="mb-4">
-          {overallProgress >= 80 ? "Excellent progress! You're almost there!" 
-           : overallProgress >= 60 ? "Great work! Keep up the momentum!" 
-           : overallProgress >= 40 ? "Good start! Stay consistent for better results!"
-           : "Every journey begins with a single step. You've got this!"}
-        </p>
-        <div className="text-sm opacity-90">
-          "Progress, not perfection" - {userProfile.identity}
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        {/* Current Streak */}
+        <div className="bg-white rounded-xl shadow-lg p-6 text-center">
+          <div className="text-3xl font-bold text-orange-600">{streak}</div>
+          <div className="text-sm text-gray-600 mt-1">Day Streak</div>
+          <div className="text-xs text-gray-500 mt-1">80%+ completion</div>
+        </div>
+
+        {/* This Week */}
+        <div className="bg-white rounded-xl shadow-lg p-6 text-center">
+          <div className="text-3xl font-bold text-blue-600">
+            {progressData.slice(-7).reduce((sum, p) => sum + p.completedTasks, 0)}
+          </div>
+          <div className="text-sm text-gray-600 mt-1">Tasks Completed</div>
+          <div className="text-xs text-gray-500 mt-1">This week</div>
+        </div>
+
+        {/* Best Day */}
+        <div className="bg-white rounded-xl shadow-lg p-6 text-center">
+          <div className="text-3xl font-bold text-green-600">
+            {Math.max(...progressData.map(p => p.completionRate), 0)}%
+          </div>
+          <div className="text-sm text-gray-600 mt-1">Best Day</div>
+          <div className="text-xs text-gray-500 mt-1">Completion rate</div>
+        </div>
+
+        {/* Total Days */}
+        <div className="bg-white rounded-xl shadow-lg p-6 text-center">
+          <div className="text-3xl font-bold text-purple-600">
+            {progressData.length}
+          </div>
+          <div className="text-sm text-gray-600 mt-1">Active Days</div>
+          <div className="text-xs text-gray-500 mt-1">Total tracked</div>
         </div>
       </div>
+
+      {/* Progress Chart */}
+      <div className="bg-white rounded-xl shadow-lg p-6">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+          <TrendingUpIcon className="text-purple-600" />
+          Progress Trend (Last 30 Days)
+        </h3>
+        
+        <div className="grid grid-cols-7 gap-2">
+          {progressData.slice(-21).map((data, _index) => (
+            <div key={data.date} className="text-center">
+              <div
+                className={`w-full h-16 rounded-lg flex items-end justify-center text-xs font-medium ${getProgressColor(data.completionRate)}`}
+                title={`${data.date}: ${data.completionRate}% (${data.completedTasks}/${data.totalTasks})`}
+              >
+                <div
+                  className={`w-full rounded-lg ${getProgressBarColor(data.completionRate)} opacity-20`}
+                  style={{ height: `${Math.max(data.completionRate, 10)}%` }}
+                ></div>
+                <span className="absolute text-xs font-bold">
+                  {data.completionRate}%
+                </span>
+              </div>
+              <div className="text-xs text-gray-500 mt-1">
+                {new Date(data.date).toLocaleDateString('en-US', { 
+                  month: 'short', 
+                  day: 'numeric' 
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Task History */}
+      <TaskHistory userId={userId} days={14} />
     </div>
   );
-}
+};
+
+export default GoalTrackingPage;

@@ -1,5 +1,5 @@
 // src/components/AppSidebar.tsx
-import React, { 
+import { 
   useEffect, 
   useState, 
   useCallback, 
@@ -13,7 +13,6 @@ import {
   SidebarItemGroup, 
   SidebarItems,
   Badge,
-  Spinner,
   Avatar 
 } from "flowbite-react";
 import { 
@@ -24,25 +23,16 @@ import {
   HiCog,
   HiLogout,
   HiRefresh,
-  HiTrendingUp,
-  HiCalendar,
   HiUser
 } from "react-icons/hi";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import { 
   getPreviousDayTasksString,
-  getUserData,
   getDailyPlan,
   healthCheck
 } from "../services/firestoreService";
 import { auth } from "../firebase";
 import { signOut } from "firebase/auth";
-import Dashboard from "./Dashboard";
-import GoalTrackingPage from "./GoalTrackingPage";
-import AITrainerPage from "./AITrainerPage";
-
-
-
 
 interface AppSidebarProps {
   userId: string;
@@ -56,7 +46,7 @@ interface AppSidebarProps {
 interface NavigationItem {
   path: string;
   name: string;
-  icon: React.ComponentType<any>;
+  icon: React.FC<React.SVGProps<SVGSVGElement>>;
   badge?: string | number;
   disabled?: boolean;
   external?: boolean;
@@ -81,7 +71,6 @@ interface SidebarState {
   };
   systemHealth: 'healthy' | 'degraded' | 'unhealthy';
 }
-
 
 const useTaskHistory = (userId: string) => {
   const [history, setHistory] = useState<TaskHistoryItem[]>([]);
@@ -169,8 +158,12 @@ const useUserStats = (userId: string) => {
       const todayPlan = await getDailyPlan(userId, today);
       
       if (todayPlan) {
-        const total = todayPlan.tasks.filter(t => !t.id.includes('quote')).length;
-        const completed = todayPlan.tasks.filter(t => t.isCompleted && !t.id.includes('quote')).length;
+        // normalize tasks: handle array or object map from RTDB
+        const rawTasks: any = todayPlan.tasks || [];
+        const tasksArr = Array.isArray(rawTasks) ? rawTasks : Object.values(rawTasks);
+        const filtered = tasksArr.filter((t: any) => !(t?.id || '').includes?.('quote'));
+        const total = filtered.length;
+        const completed = filtered.filter((t: any) => t.isCompleted).length;
         
         // Calculate level based on completed tasks (every 10 completed tasks = 1 level)
         const level = Math.floor(completed / 10) + 1;
@@ -239,7 +232,7 @@ const TaskHistoryItem = memo<{ task: TaskHistoryItem; index: number }>(({ task, 
     style={{ animationDelay: `${index * 50}ms` }}
   >
     <div className="flex items-start gap-2">
-      <span className={`text-xs mt-0.5 ${task.isCompleted ? '✅' : '⏳'}`}>
+      <span className={`text-xs mt-0.5`}>
         {task.isCompleted ? '✅' : '⏳'}
       </span>
       <div className="flex-1 min-w-0">
@@ -338,6 +331,8 @@ const SystemStatus = memo<{
     unhealthy: { color: 'red', icon: '🔴', text: 'Service issues detected' }
   };
 
+  
+
   const config = statusConfig[health];
 
   if (collapsed) {
@@ -404,7 +399,7 @@ export const AppSidebar = memo<AppSidebarProps>(({
   const { stats, loading: statsLoading, refreshStats } = useUserStats(userId);
   const { health, checkHealth } = useSystemHealth();
 
-  // Navigation items configuration
+  // Navigation items configuration - FIXED: Match your App.tsx routes
   const navigationItems: NavigationItem[] = useMemo(() => [
     {
       path: "/",
@@ -419,6 +414,7 @@ export const AppSidebar = memo<AppSidebarProps>(({
       badge: stats.totalTasks - stats.completedTasks > 0 ? stats.totalTasks - stats.completedTasks : undefined
     },
     {
+      // FIXED: Match your App.tsx route paths
       path: "/GoalTrackingPage",
       name: "Goal Tracking",
       icon: HiChartBar
@@ -458,10 +454,12 @@ export const AppSidebar = memo<AppSidebarProps>(({
   // Handle navigation
   const handleNavigation = useCallback((path: string) => {
     onNavigate?.(path);
+    // ensure navigation happens programmatically as well
+    navigate(path);
     if (window.innerWidth < 768) {
       onToggleCollapse?.();
     }
-  }, [onNavigate, onToggleCollapse]);
+  }, [onNavigate, onToggleCollapse, navigate]);
 
   // Update current page and fetch data
   useEffect(() => {
@@ -543,8 +541,10 @@ export const AppSidebar = memo<AppSidebarProps>(({
               <SidebarItem
                 key={item.path}
                 as={Link}
-                to={item.path} // ✅ Correct for React Router
+                to={item.path}
                 icon={item.icon}
+                label={item.badge ? String(item.badge) : undefined}
+                labelColor="blue"
                 className={`transition-all duration-200 ${
                   location.pathname === item.path
                     ? 'bg-blue-50 text-blue-700 border-r-4 border-blue-500 font-semibold'
@@ -553,14 +553,7 @@ export const AppSidebar = memo<AppSidebarProps>(({
                 onClick={() => handleNavigation(item.path)}
                 disabled={item.disabled}
               >
-                <div className="flex items-center justify-between w-full">
-                  <span className={collapsed ? 'sr-only' : ''}>{item.name}</span>
-                  {item.badge && !collapsed && (
-                    <Badge color="blue" size="sm">
-                      {item.badge}
-                    </Badge>
-                  )}
-                </div>
+                {item.name}
               </SidebarItem>
             ))}
           </SidebarItemGroup>
@@ -580,7 +573,11 @@ export const AppSidebar = memo<AppSidebarProps>(({
                 </Badge>
               </div>
               
-              <div className="max-h-64 overflow-y-auto custom-scrollbar">
+              {/* FIXED: Removed syntax error in style object */}
+              <div className="max-h-64 overflow-y-auto" style={{
+                scrollbarWidth: 'thin',
+                scrollbarColor: 'rgba(156, 163, 175, 0.5) transparent'
+              }}>
                 {state.loading ? (
                   <LoadingSkeleton />
                 ) : state.error ? (
@@ -646,23 +643,6 @@ export const AppSidebar = memo<AppSidebarProps>(({
           </div>
         )}
       </Sidebar>
-
-      {/* Custom Styles */}
-      <style jsx>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(156, 163, 175, 0.5);
-          border-radius: 2px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(156, 163, 175, 0.8);
-        }
-      `}</style>
     </div>
   );
 });
