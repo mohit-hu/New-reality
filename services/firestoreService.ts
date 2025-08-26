@@ -3,6 +3,7 @@ import { db } from "../firebase";
 import { UserProfile, Goal, DailyPlan, DailyReflection, Task } from "../types";
 
 // User Data fetch
+// ...existing code...
 export const getUserData = async (userId: string) => {
     const userRef = ref(db, `users/${userId}`);
     const snapshot = await get(userRef);
@@ -15,12 +16,15 @@ export const getUserData = async (userId: string) => {
         goal: data?.goal || { title: "Default goal", tasks: [] }
     };
 };
+// ...existing code...
 
 // User Data update
+// ...existing code...
 export const saveUserData = async (userId: string, profile: UserProfile, goal: Goal) => {
     const userRef = ref(db, `users/${userId}`);
-    await update(userRef, { profile, goal }); // Use update() function
+    await update(userRef, { profile, goal });
 };
+// ...existing code...
 
 // Daily Plan fetch
 export const getDailyPlan = async (userId: string, date: string): Promise<DailyPlan | null> => {
@@ -53,21 +57,21 @@ export const saveDailyReflection = async (userId: string, date: string, reflecti
 // For Gemini Context - Get previous day tasks
 export const getPreviousDayTasksString = async (userId: string, today: string): Promise<string> => {
     const plansRef = ref(db, `users/${userId}/dailyPlans`);
-    
-    // Create query with new syntax
     const plansQuery = query(
         plansRef,
         orderByKey(),
         endAt(today),
         limitToLast(2)
     );
-    
+
     const snapshot = await get(plansQuery);
     const plans = snapshot.val();
-    
+
     if (!plans) return "No previous tasks recorded.";
-    
+
     const planKeys = Object.keys(plans).filter(k => k < today).sort();
+    if (planKeys.length === 0) return "No previous tasks recorded.";
+
     const lastKey = planKeys[planKeys.length - 1];
     const lastPlan = plans[lastKey];
     
@@ -76,7 +80,7 @@ export const getPreviousDayTasksString = async (userId: string, today: string): 
             .map((t: Task) => `${t.text} (${t.isCompleted ? 'Completed' : 'Not Completed'})`)
             .join('\n');
     }
-    
+
     return "No previous tasks recorded.";
 };
 
