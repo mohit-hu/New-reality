@@ -5,7 +5,7 @@ import { FiUser, FiTarget, FiArrowRight } from 'react-icons/fi';
 
 interface OnboardingProps {
   userId: string;
-  onComplete: () => void;
+  onComplete: (profile: UserProfile, goal: Goal) => void;
 }
 
 const Onboarding: React.FC<OnboardingProps> = ({ userId, onComplete }) => {
@@ -55,7 +55,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ userId, onComplete }) => {
 
     try {
       await saveUserData(userId, profile, goal);
-      onComplete();
+      onComplete(profile, goal);
     } catch (err: any) {
       console.error('Error saving user data:', err);
       setError(err.message || 'Failed to save your information. Please try again.');

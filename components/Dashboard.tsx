@@ -30,7 +30,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [goal, setGoal] = useState<Goal | null>(null);
   const [dailyPlan, setDailyPlan] = useState<DailyPlan | null>(null);
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]); // Tasks for the current daily plan
   const [loading, setLoading] = useState(true);
   const [reflection, setReflection] = useState('');
   const [reflectionResponse, setReflectionResponse] = useState('');
@@ -38,6 +38,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
   const [generatingPlan, setGeneratingPlan] = useState(false);
 
   // Authentication listener
+  // This useEffect handles initial user authentication and data loading
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       try {
@@ -63,6 +64,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
     return () => unsubscribe();
   }, []);
 
+  // Function to load user profile, goal, and today's daily plan
   const loadUserData = async (userId: string) => {
     try {
       console.log('Loading user data for', userId);
@@ -86,7 +88,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
       if (storedPlan) {
         setDailyPlan(storedPlan);
         const t = normalizeTasks(storedPlan.tasks as unknown);
-        setTasks(t);
+        setTasks(t); // Set tasks from stored plan
       } else {
         // Generate new plan
         await generateNewDailyPlan(userId, userData.profile, userData.goal);
@@ -95,6 +97,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
       console.error('Error loading user data:', error);
     }
   };
+
 
   const generateNewDailyPlan = async (userId: string, profile: UserProfile, userGoal: Goal) => {
     try {

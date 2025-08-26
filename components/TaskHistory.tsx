@@ -30,39 +30,39 @@ export function TaskHistory({ userId, days = 7 }: TaskHistoryProps) {
       setError(null);
       
       try {
-        const allTasks: TaskHistoryData[] = [];
-        
+        const datePromises = [];
         for (let i = 1; i <= days; i++) {
           const day = new Date(Date.now() - i * 86400000);
           const dateStr = day.toISOString().split('T')[0];
-          
-          const tasksStr = await getPreviousDayTasksString(userId, dateStr);
-          
-          if (tasksStr && tasksStr !== "No previous tasks recorded.") {
-            const tasks = tasksStr.split('\n')
-              .filter(Boolean)
-              .map(taskLine => {
-                const isCompleted = taskLine.includes('(Completed)');
-                const text = taskLine
-                  .replace(/\s*\((Completed|Not Completed)\)\s*$/, '')
-                  .replace(/^-\s*/, '')
-                  .trim();
-                
-                return { text, isCompleted };
-              })
-              .filter(task => task.text.length > 0);
+          datePromises.push(
+            getPreviousDayTasksString(userId, dateStr).then(tasksStr => ({ tasksStr, day, dateStr }))
+          );
+        }
 
-            if (tasks.length > 0) {
-              allTasks.push({
-                date: dateStr,
-                tasks,
-                formattedDate: day.toLocaleDateString('en-US', {
-                  weekday: 'short',
-                  month: 'short',
-                  day: 'numeric'
-                })
-              });
-            }
+        const results = await Promise.all(datePromises);
+        const allTasks: TaskHistoryData[] = [];
+
+        for (const { tasksStr, day, dateStr } of results) {
+          if (!tasksStr || tasksStr === "No previous tasks recorded.") continue;
+
+          const tasks = tasksStr.split('\n')
+            .filter(Boolean)
+            .map(taskLine => {
+              const isCompleted = taskLine.includes('(Completed)');
+              const text = taskLine
+                .replace(/\s*\((Completed|Not Completed)\)\s*$/, '')
+                .replace(/^-\s*/, '')
+                .trim();
+              return { text, isCompleted };
+            })
+            .filter(task => task.text.length > 0);
+
+          if (tasks.length > 0) {
+            allTasks.push({
+              date: dateStr,
+              tasks,
+              formattedDate: day.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+            });
           }
         }
         
@@ -196,7 +196,7 @@ export function TaskHistory({ userId, days = 7 }: TaskHistoryProps) {
                   }`}
                 >
                   <div className="flex-shrink-0 mt-0.5">
-                    {task.isCompleted ? (
+                    {task.isCompleted ? ( 
                       <CheckCircleIcon className="text-green-600" size={16} />
                     ) : (
                       <div className="w-4 h-4 border-2 border-gray-400 rounded-full"></div>

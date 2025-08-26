@@ -243,7 +243,7 @@ const GoalTrackingPage: React.FC<GoalTrackingPageProps> = ({ userId }) => {
                   className={`w-full rounded-lg ${getProgressBarColor(data.completionRate)} opacity-20`}
                   style={{ height: `${Math.max(data.completionRate, 10)}%` }}
                 ></div>
-                <span className="absolute text-xs font-bold">
+                <span className=" text-xs font-bold">
                   {data.completionRate}%
                 </span>
               </div>

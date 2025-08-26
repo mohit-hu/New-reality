@@ -86,6 +86,8 @@ const useTaskHistory = (userId: string) => {
     
     if (cached) {
       setHistory(cached);
+      setLoading(false);
+      setError(null);
       return;
     }
 
@@ -330,7 +332,6 @@ const SystemStatus = memo<{
     degraded: { color: 'yellow', icon: '🟡', text: 'Some features may be slow' },
     unhealthy: { color: 'red', icon: '🔴', text: 'Service issues detected' }
   };
-
   
 
   const config = statusConfig[health];
@@ -381,25 +382,12 @@ export const AppSidebar = memo<AppSidebarProps>(({
 }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const [state, setState] = useState<SidebarState>({
-    currentPage: "Dashboard",
-    taskHistory: [],
-    loading: false,
-    error: null,
-    userStats: {
-      totalTasks: 0,
-      completedTasks: 0,
-      streak: 0,
-      level: 1
-    },
-    systemHealth: 'healthy'
-  });
 
   const { history, loading: historyLoading, error: historyError, fetchTaskHistory } = useTaskHistory(userId);
   const { stats, loading: statsLoading, refreshStats } = useUserStats(userId);
   const { health, checkHealth } = useSystemHealth();
 
-  // Navigation items configuration - FIXED: Match your App.tsx routes
+  // Navigation items configuration
   const navigationItems: NavigationItem[] = useMemo(() => [
     {
       path: "/",
@@ -408,13 +396,12 @@ export const AppSidebar = memo<AppSidebarProps>(({
       badge: stats.completedTasks > 0 ? stats.completedTasks : undefined
     },
     {
-      path: "/tasks",
+      path: "/TaskBoard",
       name: "My Tasks",
       icon: HiClipboardList,
       badge: stats.totalTasks - stats.completedTasks > 0 ? stats.totalTasks - stats.completedTasks : undefined
     },
     {
-      // FIXED: Match your App.tsx route paths
       path: "/GoalTrackingPage",
       name: "Goal Tracking",
       icon: HiChartBar
@@ -425,7 +412,7 @@ export const AppSidebar = memo<AppSidebarProps>(({
       icon: HiLightBulb
     },
     {
-      path: "/profile",
+      path: "/Profile",
       name: "Profile",
       icon: HiUser
     },
@@ -440,6 +427,10 @@ export const AppSidebar = memo<AppSidebarProps>(({
   const pageNames: Record<string, string> = useMemo(() => 
     Object.fromEntries(navigationItems.map(item => [item.path, item.name]))
   , [navigationItems]);
+
+  // Derived state
+  const currentPage = pageNames[location.pathname] || "Dashboard";
+  const isLoading = historyLoading || statsLoading;
 
   // Handle logout
   const handleLogout = useCallback(async () => {
@@ -461,35 +452,13 @@ export const AppSidebar = memo<AppSidebarProps>(({
     }
   }, [onNavigate, onToggleCollapse, navigate]);
 
-  // Update current page and fetch data
+  // Fetch data on mount and when user changes
   useEffect(() => {
-    const currentPageName = pageNames[location.pathname] || "Dashboard";
-    setState(prev => ({ ...prev, currentPage: currentPageName }));
-    
     if (userId) {
       fetchTaskHistory(7);
       refreshStats();
     }
-  }, [location.pathname, userId, pageNames, fetchTaskHistory, refreshStats]);
-
-  // Update state when data changes
-  useEffect(() => {
-    setState(prev => ({
-      ...prev,
-      taskHistory: history,
-      loading: historyLoading || statsLoading,
-      error: historyError,
-      userStats: stats,
-      systemHealth: health
-    }));
-  }, [history, historyLoading, statsLoading, historyError, stats, health]);
-
-  // Cleanup
-  useEffect(() => {
-    return () => {
-      // Cleanup any subscriptions or timers if needed
-    };
-  }, []);
+  }, [userId, fetchTaskHistory, refreshStats]);
 
   return (
     <div className={`h-full bg-white shadow-lg transition-all duration-300 ${
@@ -504,7 +473,7 @@ export const AppSidebar = memo<AppSidebarProps>(({
         <UserProfile
           userName={userName}
           userAvatar={userAvatar}
-          stats={state.userStats}
+          stats={stats}
           collapsed={collapsed}
           onLogout={handleLogout}
         />
@@ -515,7 +484,7 @@ export const AppSidebar = memo<AppSidebarProps>(({
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
                 <span className="text-blue-600">📍</span>
-                {state.currentPage}
+                {currentPage}
               </h2>
               <button
                 onClick={() => {
@@ -526,9 +495,7 @@ export const AppSidebar = memo<AppSidebarProps>(({
                 className="p-2 hover:bg-white/70 rounded-lg transition-colors duration-200"
                 title="Refresh data"
               >
-                <HiRefresh className={`w-4 h-4 text-gray-500 ${
-                  state.loading ? 'animate-spin' : ''
-                }`} />
+                <HiRefresh className={`w-4 h-4 text-gray-500 ${isLoading ? 'animate-spin' : ''}`} />
               </button>
             </div>
           </div>
@@ -540,8 +507,6 @@ export const AppSidebar = memo<AppSidebarProps>(({
             {navigationItems.map((item) => (
               <SidebarItem
                 key={item.path}
-                as={Link}
-                to={item.path}
                 icon={item.icon}
                 label={item.badge ? String(item.badge) : undefined}
                 labelColor="blue"
@@ -551,7 +516,6 @@ export const AppSidebar = memo<AppSidebarProps>(({
                     : 'hover:bg-gray-50 text-gray-700'
                 }`}
                 onClick={() => handleNavigation(item.path)}
-                disabled={item.disabled}
               >
                 {item.name}
               </SidebarItem>
@@ -575,12 +539,12 @@ export const AppSidebar = memo<AppSidebarProps>(({
               
               {/* FIXED: Removed syntax error in style object */}
               <div className="max-h-64 overflow-y-auto" style={{
-                scrollbarWidth: 'thin',
-                scrollbarColor: 'rgba(156, 163, 175, 0.5) transparent'
+                scrollbarWidth: 'thin', // Corrected property name
+                scrollbarColor: 'rgba(156, 163, 175, 0.5) transparent' // Corrected property name
               }}>
-                {state.loading ? (
+                {isLoading ? (
                   <LoadingSkeleton />
-                ) : state.error ? (
+                ) : historyError ? (
                   <div className="text-center py-4">
                     <p className="text-red-500 text-xs mb-2">Failed to load history</p>
                     <button
@@ -621,7 +585,7 @@ export const AppSidebar = memo<AppSidebarProps>(({
 
         {/* System Status */}
         <SystemStatus 
-          health={state.systemHealth}
+          health={health}
           onRefresh={checkHealth}
           collapsed={collapsed}
         />

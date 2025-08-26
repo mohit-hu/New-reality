@@ -17,6 +17,24 @@ const TaskItem: React.FC<TaskItemProps> = ({
   showGIABadge = true,
   size = 'medium'
 }) => {
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onToggle(task.id);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleClick(e as any);
+    }
+  };
+
+  // Don't render invalid tasks
+  if (!task || !task.id || !task.text?.trim()) {
+    return null;
+  }
+
   const sizeClasses = {
     small: 'p-2 text-sm',
     medium: 'p-3 text-base',
@@ -37,7 +55,12 @@ const TaskItem: React.FC<TaskItemProps> = ({
 
   return (
     <div
-      onClick={() => onToggle(task.id)}
+      onClick={handleClick}
+      onKeyDown={handleKeyDown}
+      tabIndex={0}
+      role="button"
+      aria-label={`Toggle task: ${task.text}`}
+      aria-pressed={task.isCompleted}
       className={`flex items-center gap-3 rounded-lg cursor-pointer transition-all duration-200 border ${sizeClasses[size]} ${
         task.isCompleted 
           ? 'bg-green-50 border-green-200 text-green-700'
