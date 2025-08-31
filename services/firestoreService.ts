@@ -11,9 +11,13 @@ export const getUserData = async (userId: string) => {
 
     console.log('getUserData snapshot:', data);
 
+    if (!data) {
+        return null;
+    }
+
     return {
-        profile: data?.profile || { context: "Default context", identity: "Default identity" },
-        goal: data?.goal || { title: "Default goal", tasks: [] }
+        profile: data.profile,
+        goal: data.goal
     };
 };
 // ...existing code...

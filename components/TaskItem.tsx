@@ -1,18 +1,20 @@
-import React from 'react';
+  import React from 'react';
 import { Task } from '../types';
 import { CheckIcon, StarIcon, CheckCircleIcon } from './Icons';
 
 interface TaskItemProps {
   task: Task;
-  onToggle: (taskId: string) => void;
+  onToggle?: (taskId: string) => void;
+  onClick?: (task: Task) => void;
   isHighlighted?: boolean;
   showGIABadge?: boolean;
   size?: 'small' | 'medium' | 'large';
 }
 
-const TaskItem: React.FC<TaskItemProps> = ({ 
-  task, 
-  onToggle, 
+const TaskItem: React.FC<TaskItemProps> = ({
+  task,
+  onToggle,
+  onClick,
   isHighlighted = false,
   showGIABadge = true,
   size = 'medium'
@@ -20,7 +22,11 @@ const TaskItem: React.FC<TaskItemProps> = ({
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    onToggle(task.id);
+    if (onClick) {
+      onClick(task);
+    } else if (onToggle) {
+      onToggle(task.id);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -140,12 +146,18 @@ const TaskItem: React.FC<TaskItemProps> = ({
 };
 
 // Alternative compact version for lists
-export const CompactTaskItem: React.FC<TaskItemProps> = ({ task, onToggle }) => (
+export const CompactTaskItem: React.FC<TaskItemProps> = ({ task, onToggle, onClick }) => (
   <div
-    onClick={() => onToggle(task.id)}
+    onClick={() => {
+      if (onClick) {
+        onClick(task);
+      } else if (onToggle) {
+        onToggle(task.id);
+      }
+    }}
     className={`flex items-center gap-2 p-2 rounded cursor-pointer transition-all ${
-      task.isCompleted 
-        ? 'bg-green-50 text-green-700' 
+      task.isCompleted
+        ? 'bg-green-50 text-green-700'
         : 'hover:bg-gray-100'
     }`}
   >
@@ -158,11 +170,11 @@ export const CompactTaskItem: React.FC<TaskItemProps> = ({ task, onToggle }) => 
     >
       {task.isCompleted && <CheckIcon className="text-white" size={10} />}
     </div>
-    
+
     <span className={`text-sm ${task.isCompleted ? 'line-through' : ''}`}>
       {task.text}
     </span>
-    
+
     {task.isGIA && (
       <StarIcon className="text-yellow-500" size={12} />
     )}
@@ -170,12 +182,18 @@ export const CompactTaskItem: React.FC<TaskItemProps> = ({ task, onToggle }) => 
 );
 
 // Task item for mobile view
-export const MobileTaskItem: React.FC<TaskItemProps> = ({ task, onToggle, isHighlighted }) => (
+export const MobileTaskItem: React.FC<TaskItemProps> = ({ task, onToggle, onClick, isHighlighted }) => (
   <div
-    onClick={() => onToggle(task.id)}
+    onClick={() => {
+      if (onClick) {
+        onClick(task);
+      } else if (onToggle) {
+        onToggle(task.id);
+      }
+    }}
     className={`flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-all border ${
-      task.isCompleted 
-        ? 'bg-green-50 border-green-200' 
+      task.isCompleted
+        ? 'bg-green-50 border-green-200'
         : isHighlighted
         ? 'bg-purple-50 border-purple-200'
         : 'bg-white border-gray-200'
@@ -190,12 +208,12 @@ export const MobileTaskItem: React.FC<TaskItemProps> = ({ task, onToggle, isHigh
     >
       {task.isCompleted && <CheckIcon className="text-white" size={12} />}
     </div>
-    
+
     <div className="flex-1">
       <p className={`text-sm ${task.isCompleted ? 'line-through text-green-600' : 'text-gray-700'}`}>
         {task.text}
       </p>
-      
+
       <div className="flex items-center gap-2 mt-1">
         {task.isGIA && (
           <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs rounded-full">
@@ -203,7 +221,7 @@ export const MobileTaskItem: React.FC<TaskItemProps> = ({ task, onToggle, isHigh
             GIA
           </span>
         )}
-        
+
         {isHighlighted && (
           <span className="inline-flex items-center px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded-full">
             Priority

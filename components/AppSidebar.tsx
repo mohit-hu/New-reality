@@ -78,7 +78,7 @@ const useTaskHistory = (userId: string) => {
   const [error, setError] = useState<string | null>(null);
   const cacheRef = useRef<Map<string, TaskHistoryItem[]>>(new Map());
 
-  const fetchTaskHistory = useCallback(async (days: number = 7) => {
+  const fetchTaskHistory = useCallback(async (days: number = 30) => {
     if (!userId) return;
 
     const cacheKey = `${userId}-${days}`;
@@ -212,9 +212,7 @@ const useSystemHealth = () => {
   return { health, checkHealth };
 };
 
-// ===============================
-// UTILITY COMPONENTS
-// ===============================
+
 
 const LoadingSkeleton = memo(() => (
   <div className="animate-pulse space-y-2">
@@ -455,7 +453,7 @@ export const AppSidebar = memo<AppSidebarProps>(({
   // Fetch data on mount and when user changes
   useEffect(() => {
     if (userId) {
-      fetchTaskHistory(7);
+      fetchTaskHistory(30);
       refreshStats();
     }
   }, [userId, fetchTaskHistory, refreshStats]);
@@ -489,7 +487,7 @@ export const AppSidebar = memo<AppSidebarProps>(({
               <button
                 onClick={() => {
                   refreshStats();
-                  fetchTaskHistory(7);
+                  fetchTaskHistory(30);
                   checkHealth();
                 }}
                 className="p-2 hover:bg-white/70 rounded-lg transition-colors duration-200"
@@ -548,7 +546,7 @@ export const AppSidebar = memo<AppSidebarProps>(({
                   <div className="text-center py-4">
                     <p className="text-red-500 text-xs mb-2">Failed to load history</p>
                     <button
-                      onClick={() => fetchTaskHistory(7)}
+                      onClick={() => fetchTaskHistory(30)}
                       className="text-xs text-blue-600 hover:underline"
                     >
                       Try again

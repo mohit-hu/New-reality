@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { UserProfile, Goal } from '../types';
-import { saveUserData } from '../services/firestoreService';
-import { FiUser, FiTarget, FiArrowRight } from 'react-icons/fi';
+import { saveUserData, getUserData } from '../services/firestoreService';
+import { FiUser, FiTarget, FiArrowRight, FiCheck } from 'react-icons/fi';
 
 interface OnboardingProps {
   userId: string;
@@ -11,6 +11,7 @@ interface OnboardingProps {
 const Onboarding: React.FC<OnboardingProps> = ({ userId, onComplete }) => {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
   
   const [profile, setProfile] = useState<UserProfile>({
@@ -54,16 +55,42 @@ const Onboarding: React.FC<OnboardingProps> = ({ userId, onComplete }) => {
     setError('');
 
     try {
+      console.log('🟡 Starting to save data...');
+      console.log('Profile:', profile);
+      console.log('Goal:', goal);
+      
+      // Data save करो
       await saveUserData(userId, profile, goal);
-      onComplete(profile, goal);
+      console.log('🟢 Data saved to database');
+      
+      // Verify कि data actually save हुआ
+      const verificationData = await getUserData(userId);
+      console.log('🔍 Verification data:', verificationData);
+      
+      if (!verificationData || !verificationData.profile || !verificationData.goal) {
+        throw new Error('Data verification failed - data not found in database');
+      }
+      
+      console.log('✅ Data successfully saved and verified');
+      
+      // Success state show करो
+      setSuccess(true);
+      
+      // 2 seconds wait के बाद onComplete call करो
+      setTimeout(() => {
+        console.log('🚀 Calling onComplete...');
+        onComplete(profile, goal);
+      }, 2000);
+      
     } catch (err: any) {
-      console.error('Error saving user data:', err);
+      console.error('❌ Error saving user data:', err);
       setError(err.message || 'Failed to save your information. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
+  // Loading Screen
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center p-4">
@@ -78,13 +105,39 @@ const Onboarding: React.FC<OnboardingProps> = ({ userId, onComplete }) => {
             Creating your personalized growth journey
           </p>
           <div className="w-full bg-gray-200 rounded-full h-2">
-            <div className="bg-gradient-to-r from-purple-600 to-blue-600 h-2 rounded-full animate-pulse"></div>
+            <div className="bg-gradient-to-r from-purple-600 to-blue-600 h-2 rounded-full w-3/4 animate-pulse"></div>
           </div>
         </div>
       </div>
     );
   }
 
+  // Success Screen
+  if (success) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md text-center">
+          <div className="bg-green-500 text-white rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4 animate-bounce">
+            <FiCheck size={32} />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">
+            Profile Created Successfully! 🎉
+          </h2>
+          <p className="text-gray-600 mb-4">
+            Your growth journey is ready to begin!
+          </p>
+          <p className="text-sm text-gray-500">
+            Taking you to your dashboard...
+          </p>
+          <div className="w-full bg-gray-200 rounded-full h-2 mt-4">
+            <div className="bg-green-500 h-2 rounded-full animate-pulse w-full"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Main Onboarding Form
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md">

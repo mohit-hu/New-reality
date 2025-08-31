@@ -22,6 +22,7 @@ import { UserProfile, Goal, Task, DailyPlan } from './types';
 import Dashboard from './components/Dashboard';
 import Login from './components/Login';
 import Onboarding from './components/Onboarding';
+import Profile from './components/Profile';
 
 interface AppState {
     user: User | null;
@@ -103,6 +104,8 @@ const normalizeTasks = (input: unknown): Task[] => {
   if (typeof input === 'object') return Object.values(input as Record<string, Task>);
   return [];
 };
+
+
 
 const App: React.FC = () => {
   const [state, dispatch] = useReducer(appReducer, initialState);
@@ -300,10 +303,12 @@ const App: React.FC = () => {
             />
             <Route
               path="/TaskBoard"
-              element={
+               element={
                 state.user ? (
-                  <div className="p-4 sm:p-6 lg:p-8"><TaskBoard tasks={tasks} onToggleTask={handleToggleTask} /></div>
-                ) : <Login />
+                  <TaskHistory userId={state.user.uid} />
+                ) : (
+                  <Login />
+                )
               }
             />
             <Route
@@ -342,20 +347,21 @@ const App: React.FC = () => {
                 )
               } 
             />
-            <Route 
-              path="/login" 
-              element={<Login />} 
+            <Route
+              path="/login"
+              element={<Login />}
             />
-            <Route 
-              path="/profile" 
+            <Route
+              path="/Profile"
               element={
-                state.user ? (
-                  <TaskHistory userId={state.user.uid} />
+                state.user && state.userProfile && state.goal ? (
+                  <Profile userProfile={state.userProfile} goal={state.goal} />
                 ) : (
                   <Login />
                 )
-              } 
+              }
             />
+
           </Routes>
         </main>
       </div>

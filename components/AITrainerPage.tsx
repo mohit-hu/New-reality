@@ -28,12 +28,12 @@ export default function AITrainerPage({ goal, userProfile }: AITrainerProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const genAI = new GoogleGenerativeAI(API_KEY);
 
-  // Quick action buttons
+  // Quick action buttons - more trainer-like
   const quickActions = [
-    { icon: HiChartBar, text: "Check my progress", query: "How am I doing with my goals?" },
-    { icon: HiHeart, text: "Motivation boost", query: "I need some motivation to stay on track" },
-    { icon: HiLightBulb, text: "Today's tip", query: "Give me a quick tip for today" },
-    { icon: HiCog, text: "Adjust my plan", query: "Help me adjust my current plan" },
+    { icon: HiChartBar, text: "Progress Check", query: "Coach, how am I progressing toward my goal? What's working well?" },
+    { icon: HiHeart, text: "Motivate Me", query: "I need a strong motivation boost right now - give me that fire!" },
+    { icon: HiLightBulb, text: "Workout Tip", query: "What's one powerful tip I can implement today to get closer to my goal?" },
+    { icon: HiCog, text: "Plan Adjustment", query: "My current plan isn't working perfectly. Help me tweak it to make it more effective." },
   ];
 
   // Scroll to bottom when new messages arrive
@@ -52,16 +52,18 @@ export default function AITrainerPage({ goal, userProfile }: AITrainerProps) {
   const initializeConversation = () => {
     const welcomeMessage: Message = {
       id: `msg_${Date.now()}`,
-      content: `🏋️‍♂️ Hey there, ${userProfile.identity}! I'm your AI Personal Trainer, here to help you achieve your goal: "${goal.title}".
+      content: `💪 ATTENTION, ${userProfile.identity.toUpperCase()}! This is Coach Alex reporting for duty!
 
-I've reviewed your profile and I'm excited to support your journey! Whether you need motivation, advice, progress tracking, or just someone to talk through challenges with - I'm here for you 24/7.
+I've got your goal locked in: "${goal.title}". I've seen rookies like you turn into absolute BEASTS, and you're next on the list!
 
-What would you like to work on today?`,
+No more excuses. No more waiting. We're building the ${userProfile.identity} you were born to be. Ready to dig deep and push through?
+
+What's our first mission today, soldier? 💥`,
       sender: "trainer",
       timestamp: new Date(),
       type: "text"
     };
-    
+
     setMessages([welcomeMessage]);
   };
 
@@ -81,24 +83,32 @@ What would you like to work on today?`,
     setIsLoading(true);
 
     try {
-      const systemInstruction = `You are an experienced, motivational personal trainer and life coach. Your personality is encouraging, knowledgeable, and supportive but also firm when needed.
+      const systemInstruction = `You are Coach Alex, an elite personal trainer with 15+ years of experience transforming lives through fitness and mindset coaching. You're tough but fair, like a drill sergeant who genuinely cares about each client's success.
+
+Your personality:
+- Direct and no-nonsense, but always encouraging
+- Uses military/fitness slang: "dig deep," "push through," "no excuses," "embrace the suck"
+- Calls clients by their desired identity (e.g., "champion," "warrior," "athlete")
+- Celebrates small wins like they're major victories
+- Firm about consistency but understanding of setbacks
+- Uses high-energy, motivational language with occasional tough love
 
 User Context:
 - Goal: "${goal.title}"
 - Identity: "${userProfile.identity}"
 - Background: "${userProfile.context || 'Not specified'}"
 
-Guidelines:
-1. Always be encouraging and positive
-2. Provide actionable, specific advice
-3. Use fitness/wellness terminology appropriately
-4. Keep responses conversational and engaging
-5. Reference their goal and identity when relevant
-6. If asked about progress, encourage them to check their goal tracking page
-7. Provide practical tips they can implement immediately
-8. Use motivational language and emojis appropriately
-9. Keep responses under 150 words for better engagement
-10. Ask follow-up questions to keep the conversation going`;
+Response Style:
+1. Start with direct acknowledgment: "Listen up, [identity]!" or "Alright, [identity], let's talk about this..."
+2. Be conversational like a real coaching session
+3. Use fitness metaphors and analogies
+4. End with a challenge or call-to-action
+5. Keep responses 80-120 words for punchy, memorable coaching
+6. Reference their goal and identity throughout
+7. If progress-related, push them to check their tracking data
+8. Use emojis strategically for emphasis (💪, 🔥, 🎯, etc.)
+9. Ask tough questions that make them think
+10. Always end on an empowering note`;
 
       const prompt = `The user says: "${messageContent}"
 
@@ -154,8 +164,8 @@ Based on their goal and profile, provide a helpful, motivational response as the
             <HiHeart className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-xl font-bold">🏋️‍♂️ AI Personal Trainer</h1>
-            <p className="text-blue-100 text-sm">Your 24/7 Fitness & Wellness Coach</p>
+            <h1 className="text-xl font-bold">💪 Coach Alex</h1>
+            <p className="text-blue-100 text-sm">Elite Personal Trainer | No Excuses, All Results</p>
           </div>
         </div>
       </div>
@@ -198,7 +208,7 @@ Based on their goal and profile, provide a helpful, motivational response as the
                   <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
                     <HiHeart className="w-3 h-3 text-white" />
                   </div>
-                  <span className="text-xs font-semibold text-gray-600">AI Trainer</span>
+                  <span className="text-xs font-semibold text-gray-600">Coach Alex</span>
                 </div>
               )}
               
