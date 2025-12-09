@@ -386,25 +386,24 @@ export const AppSidebar = memo<AppSidebarProps>(({
     }
   }, [userId, fetchTaskHistory, refreshStats]);
 
+  const sidebarTheme = {
+    root: {
+      inner: "h-full overflow-y-auto overflow-x-hidden rounded bg-[linear-gradient(120deg,#d5c5ff_0%,#a7f3d0_50%,#f0f0f0_100%)] px-3 py-4 dark:bg-gray-800"
+    }
+  };
+
   return (
-    <div className={`flex flex-col h-full bg-gray-50 shadow-lg transition-all duration-300 ${
+    <div style={{
+      background: "linear-gradient(120deg, #d5c5ff 0%, #a7f3d0 50%, #f0f0f0 100%)"
+    }} className={`flex flex-col h-full bg-gray-50 shadow-lg transition-all duration-300 ${
       collapsed ? 'w-16' : 'w-64'
     }`} >
       {/* Collapse Toggle Button */}
         {onToggleCollapse && (
-          <div className="p-2 border-t" >
+          <div className="p-2 border-t " >
             <button
               onClick={onToggleCollapse}
-              className="w-full flex items-center justify-center p-1 rounded-lg transition-colors duration-200 border border-gray-300" style={{
-      background: `
-        radial-gradient(
-          circle at center,
-          rgba(255, 255, 255, 0.08) 0%,
-          rgba(255, 255, 255, 0.04) 20%,
-          rgba(0, 0, 0, 0.0) 60%
-        )
-      `,
-    }}
+              className="w-full flex items-center justify-center p-1 rounded-lg transition-colors duration-200 border border-black/10 hover:bg-gray-100"
               title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             >
               <span className={`transform transition-transform duration-200 ${
@@ -415,9 +414,10 @@ export const AppSidebar = memo<AppSidebarProps>(({
             </button>
           </div>
         )}
-      <Sidebar 
-        aria-label="Application Navigation" 
+      <Sidebar
+        aria-label="Application Navigation"
         className="h-full"
+        theme={sidebarTheme}
         collapsed={collapsed}
       >
         {/* User Profile Section */}

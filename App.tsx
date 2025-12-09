@@ -268,14 +268,7 @@ const App: React.FC = () => {
 
   return (
     <BrowserRouter>
-      <div className="flex h-screen " style={{
-      backgroundImage: `
-        repeating-linear-gradient(0deg, transparent, transparent 20px, rgba(75, 85, 99, 0.08) 20px, rgba(75, 85, 99, 0.08) 21px),
-        repeating-linear-gradient(90deg, transparent, transparent 30px, rgba(107, 114, 128, 0.06) 30px, rgba(107, 114, 128, 0.06) 31px),
-        repeating-linear-gradient(60deg, transparent, transparent 40px, rgba(55, 65, 81, 0.05) 40px, rgba(55, 65, 81, 0.05) 41px),
-        repeating-linear-gradient(150deg, transparent, transparent 35px, rgba(31, 41, 55, 0.04) 35px, rgba(31, 41, 55, 0.04) 36px)
-      `,
-    }}>
+      <div className="flex h-screen " >
         {/* Sidebar shown when user logged in */}
         {state.user && (
           <AppSidebar
@@ -288,7 +281,7 @@ const App: React.FC = () => {
 
         {/* Main Content */}
         <main className={`flex-1 overflow-auto ${
-          state.user ? (isSidebarCollapsed ? 'ml mr'  : 'ml mr') : ''
+          state.user ? (isSidebarCollapsed ? 'ml mr hfull'  : 'ml mr h-full') : ''
         }`}>
           <Routes>
             <Route
