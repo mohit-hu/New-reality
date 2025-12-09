@@ -1,181 +1,36 @@
-import React, { useState, useEffect } from 'react';
-import { auth } from '../firebase';
-import { onAuthStateChanged, User } from 'firebase/auth';
-import {
-  getUserData,
-  getDailyPlan as getStoredDailyPlan,
-  saveDailyPlan,
-  getPreviousDayTasksString,
-  getPreviousDayReflectionString,
-  saveDailyReflection
-} from '../services/firestoreService';
-import { getDailyPlan, getReflectionResponse } from '../services/geminiService';
+import React, { useState } from 'react';
+import { saveDailyReflection } from '../services/firestoreService';
+import { getReflectionResponse } from '../services/geminiService';
 import { UserProfile, Goal, Task, DailyPlan } from '../types';
 import TaskBoard from './TaskBoard';
-import { PageLoader, ButtonLoader } from './LoadingSpinner';
+import { ButtonLoader } from './LoadingSpinner';
 import { SparklesIcon, ChatIcon, RefreshIcon } from './Icons';
 
-interface DashboardProps {}
+interface DashboardProps {
+  goal: Goal;
+  userProfile: UserProfile;
+  dailyPlan: DailyPlan | null;
+  tasks: Task[];
+  generatingPlan: boolean;
+  onToggleTask: (taskId: string) => void;
+  onRefreshPlan: () => void;
+}
 
-// Normalize tasks coming from Firestore or AI into Task[]
-const normalizeTasks = (input: unknown): Task[] => {
-  if (!input) return [];
-  if (Array.isArray(input)) return input as Task[];
-  if (typeof input === 'object') return Object.values(input as Record<string, Task>);
-  return [];
-};
-
-const Dashboard: React.FC<DashboardProps> = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [goal, setGoal] = useState<Goal | null>(null);
-  const [dailyPlan, setDailyPlan] = useState<DailyPlan | null>(null);
-  const [tasks, setTasks] = useState<Task[]>([]); // Tasks for the current daily plan
-  const [loading, setLoading] = useState(true);
+const Dashboard: React.FC<DashboardProps> = ({
+  goal,
+  userProfile,
+  dailyPlan,
+  tasks,
+  generatingPlan,
+  onToggleTask,
+  onRefreshPlan
+}) => {
   const [reflection, setReflection] = useState('');
   const [reflectionResponse, setReflectionResponse] = useState('');
   const [reflectionLoading, setReflectionLoading] = useState(false);
-  const [generatingPlan, setGeneratingPlan] = useState(false);
-
-  // Authentication listener
-  // This useEffect handles initial user authentication and data loading
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      try {
-        if (currentUser) {
-          console.log('Auth: user signed in', currentUser.uid);
-          setUser(currentUser);
-          await loadUserData(currentUser.uid);
-        } else {
-          console.log('Auth: no user');
-          setUser(null);
-          setUserProfile(null);
-          setGoal(null);
-          setDailyPlan(null);
-          setTasks([]);
-        }
-      } catch (err) {
-        console.error('Auth handler error:', err);
-      } finally {
-        setLoading(false);
-      }
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  // Function to load user profile, goal, and today's daily plan
-  const loadUserData = async (userId: string) => {
-    try {
-      console.log('Loading user data for', userId);
-      const userData = await getUserData(userId);
-      console.log('Loaded userData:', userData);
-
-      if (!userData || !userData.profile || !userData.goal) {
-        // User needs to complete onboarding — don't crash, just stop here
-        console.warn('No profile/goal found for user, show onboarding or prompt user.');
-        return;
-      }
-
-      setUserProfile(userData.profile);
-      setGoal(userData.goal);
-
-      // Load today's plan
-      const today = new Date().toISOString().split('T')[0];
-      const storedPlan = await getStoredDailyPlan(userId, today);
-      console.log('Stored plan for today:', storedPlan);
-
-      if (storedPlan) {
-        setDailyPlan(storedPlan);
-        const t = normalizeTasks(storedPlan.tasks as unknown);
-        setTasks(t); // Set tasks from stored plan
-      } else {
-        // Generate new plan
-        await generateNewDailyPlan(userId, userData.profile, userData.goal);
-      }
-    } catch (error) {
-      console.error('Error loading user data:', error);
-    }
-  };
-
-
-  const generateNewDailyPlan = async (userId: string, profile: UserProfile, userGoal: Goal) => {
-    try {
-      console.log('Generating new plan for', userId);
-      setGeneratingPlan(true);
-      const today = new Date().toISOString().split('T')[0];
-      const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-
-      console.log({ today, yesterday });
-
-      const previousDayTasks = await getPreviousDayTasksString(userId, today);
-      const previousDayReflection = await getPreviousDayReflectionString(userId, yesterday);
-      console.log('Previous day context:', { previousDayTasks, previousDayReflection });
-
-      const aiTasksRaw = await getDailyPlan(profile, userGoal, previousDayTasks, previousDayReflection);
-      console.log('AI tasks raw:', aiTasksRaw);
-
-      const aiTasks: Task[] = normalizeTasks(aiTasksRaw);
-
-      const newPlan: DailyPlan = {
-        date: today,
-        tasks: aiTasks,
-        motivationalQuote:
-          (aiTasks.find((t: Task) => (t.text || '').toLowerCase().includes('quote'))?.text) ||
-          'Stay focused on your goals!'
-      };
-
-      await saveDailyPlan(userId, newPlan);
-      setDailyPlan(newPlan);
-      setTasks(aiTasks);
-      console.log('Saved new plan:', newPlan);
-    } catch (error) {
-      console.error('Error generating daily plan:', error);
-      // Set fallback tasks
-      const fallbackTasks: Task[] = [
-        {
-          id: `task_${Date.now()}_1`,
-          text: 'Review your goals and priorities',
-          isCompleted: false,
-          isGIA: true
-        },
-        {
-          id: `task_${Date.now()}_2`,
-          text: 'Take 10 minutes for reflection',
-          isCompleted: false,
-          isGIA: false
-        }
-      ];
-      setTasks(fallbackTasks);
-    } finally {
-      setGeneratingPlan(false);
-    }
-  };
-
-  const toggleTaskComplete = async (taskId: string) => {
-    if (!user || !dailyPlan) return;
-
-    const prevTasks = tasks;
-    const updatedTasks = prevTasks.map((t: Task) =>
-      t.id === taskId ? { ...t, isCompleted: !t.isCompleted } : t
-    );
-
-    setTasks(updatedTasks);
-
-    // Update in database
-    try {
-      const updatedPlan = { ...dailyPlan, tasks: updatedTasks };
-      await saveDailyPlan(user.uid, updatedPlan);
-      setDailyPlan(updatedPlan);
-    } catch (error) {
-      console.error('Error updating task:', error);
-      // Revert on error
-      setTasks(prevTasks);
-    }
-  };
 
   const submitReflection = async () => {
-    if (!user || !userProfile || !goal || !dailyPlan || !reflection.trim()) {
+    if (!userProfile || !goal || !dailyPlan || !reflection.trim()) {
       console.warn('Cannot submit reflection — missing data or empty reflection');
       return;
     }
@@ -186,24 +41,24 @@ const Dashboard: React.FC<DashboardProps> = () => {
       const response = await getReflectionResponse(userProfile, goal, dailyPlan, reflection);
       setReflectionResponse(response);
 
-      // Save reflection to database
-      const today = new Date().toISOString().split('T')[0];
-      await saveDailyReflection(user.uid, today, {
-        reflection: reflection,
-        response: response
-      });
-      console.log('Reflection saved');
+      // Save reflection to database - we'll need to get userId from props or context
+      // For now, let's assume we can get it from auth
+      const { auth } = await import('../firebase');
+      const user = auth.currentUser;
+      if (user) {
+        const today = new Date().toISOString().split('T')[0];
+        await saveDailyReflection(user.uid, today, {
+          reflection: reflection,
+          response: response
+        });
+        console.log('Reflection saved');
+      }
     } catch (error) {
       console.error('Error getting reflection response:', error);
       setReflectionResponse('Thank you for sharing your thoughts. Keep up the great work! 💪');
     } finally {
       setReflectionLoading(false);
     }
-  };
-
-  const refreshDailyPlan = async () => {
-    if (!user || !userProfile || !goal) return;
-    await generateNewDailyPlan(user.uid, userProfile, goal);
   };
 
   const getTasksByType = () => {
@@ -226,38 +81,18 @@ const Dashboard: React.FC<DashboardProps> = () => {
     return 'Good Evening! 🌙';
   };
 
-  // Loading state
-  if (loading) {
-    return <PageLoader message="Loading your personalized plan..." />;
-  }
-
-  // User not authenticated or profile not complete
-  if (!user || !userProfile || !goal) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center p-4 ml-0">
-        <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
-          <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-            <SparklesIcon size={24} />
-          </div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">
-            Welcome to LifeGuide AI
-          </h2>
-          <p className="text-gray-600 mb-4">
-            Please complete your profile setup first to get started with your personalized growth journey.
-          </p>
-        </div>
-      </div>
-    );
-  }
+  // Since authentication and loading are handled in App.tsx, we can assume we have valid data
 
   const { quotes } = getTasksByType();
   const progress = calculateProgress();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 p-4">
-      <div className="max-w-2xl mx-auto space-y-6">
+    <div className="h-full p-1" style={{
+      background: "linear-gradient(120deg, #d5c5ff 0%, #a7f3d0 50%, #f0f0f0 100%)"
+    }}>
+      <div className="w-full mx-auto space-y-4">
         {/* Header */}
-        <div className="bg-white rounded-2xl shadow-lg p-6">
+        <div className="bg-white rounded-2xl shadow-lg p-1">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-800">
@@ -274,7 +109,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
               <div className="text-4xl font-bold text-purple-600">{progress}%</div>
               <div className="text-sm text-gray-500">Today's Progress</div>
               <button
-                onClick={() => { void refreshDailyPlan(); }}
+                onClick={() => { void onRefreshPlan(); }}
                 disabled={generatingPlan}
                 className="mt-2 text-sm text-purple-600 hover:text-purple-800 flex items-center gap-1"
               >
@@ -315,7 +150,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
             </div>
           </div>
         ) : (
-          <TaskBoard tasks={tasks} onToggleTask={toggleTaskComplete} />
+          <TaskBoard tasks={tasks} onToggleTask={onToggleTask} />
         )}
 
         {/* Daily Reflection */}

@@ -146,8 +146,11 @@ export function TaskHistory({ userId, days = 7 }: TaskHistoryProps) {
   const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6">
+    <div className="p-12"  style={{
+      background: "linear-gradient(120deg, #d5c5ff 0%, #a7f3d0 50%, #f0f0f0 100%)"
+    }}>
       {/* Header */}
+      
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
           <CalendarIcon className="text-purple-600" />
@@ -157,9 +160,10 @@ export function TaskHistory({ userId, days = 7 }: TaskHistoryProps) {
           <div className="text-sm text-gray-500">Last {days} days</div>
           <div className="text-lg font-bold text-purple-600">{completionRate}%</div>
         </div>
-      </div>
+    
 
       {/* Summary Stats */}
+
       <div className="grid grid-cols-2 gap-4 mb-6">
         <div className="bg-blue-50 rounded-lg p-3 text-center">
           <div className="text-2xl font-bold text-blue-600">{totalTasks}</div>
@@ -170,9 +174,10 @@ export function TaskHistory({ userId, days = 7 }: TaskHistoryProps) {
           <div className="text-xs text-green-600">Completed</div>
         </div>
       </div>
+      </div>
 
       {/* Task History */}
-      <div className="space-y-4 max-h-80 overflow-y-auto">
+      <div className="space-y-4">
         {taskData.map((dayData) => (
           <div key={dayData.date} className="border-l-2 border-purple-200 pl-4">
             {/* Date Header */}
@@ -216,17 +221,7 @@ export function TaskHistory({ userId, days = 7 }: TaskHistoryProps) {
         ))}
       </div>
 
-      {/* Show More Button */}
-      {taskData.length >= days && (
-        <div className="mt-4 text-center">
-          <button
-            onClick={() => {/* Implement show more functionality */}}
-            className="text-purple-600 hover:text-purple-800 text-sm font-medium"
-          >
-            View More History →
-          </button>
-        </div>
-      )}
+    
     </div>
   );
 }

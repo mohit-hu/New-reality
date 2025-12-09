@@ -278,34 +278,9 @@ const UserProfile = memo<{
           <h3 className="font-bold text-gray-800 truncate text-sm">
             {userName}
           </h3>
-          <div className="flex items-center gap-2 mt-1">
-            <Badge color="purple" size="xs">
-              Level {stats.level}
-            </Badge>
-            <span className="text-xs text-gray-500">
-              {stats.completedTasks}/{stats.totalTasks} today
-            </span>
-          </div>
         </div>
       )}
     </div>
-    
-    {!collapsed && (
-      <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-        <div className="bg-white/70 rounded-lg p-2">
-          <div className="text-lg font-bold text-blue-600">{stats.streak}</div>
-          <div className="text-xs text-gray-500">Streak</div>
-        </div>
-        <div className="bg-white/70 rounded-lg p-2">
-          <div className="text-lg font-bold text-green-600">{stats.completedTasks}</div>
-          <div className="text-xs text-gray-500">Done</div>
-        </div>
-        <div className="bg-white/70 rounded-lg p-2">
-          <div className="text-lg font-bold text-purple-600">{stats.level}</div>
-          <div className="text-xs text-gray-500">Level</div>
-        </div>
-      </div>
-    )}
     
     {!collapsed && (
       <button
@@ -320,53 +295,6 @@ const UserProfile = memo<{
   </div>
 ));
 
-const SystemStatus = memo<{ 
-  health: 'healthy' | 'degraded' | 'unhealthy';
-  onRefresh: () => void;
-  collapsed: boolean;
-}>(({ health, onRefresh, collapsed }) => {
-  const statusConfig = {
-    healthy: { color: 'green', icon: '🟢', text: 'All systems operational' },
-    degraded: { color: 'yellow', icon: '🟡', text: 'Some features may be slow' },
-    unhealthy: { color: 'red', icon: '🔴', text: 'Service issues detected' }
-  };
-  
-
-  const config = statusConfig[health];
-
-  if (collapsed) {
-    return (
-      <div className="p-2 border-t">
-        <button
-          onClick={onRefresh}
-          className="w-full flex justify-center p-2 hover:bg-gray-50 rounded-lg"
-          title={config.text}
-        >
-          <span className="text-sm">{config.icon}</span>
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="p-3 border-t bg-gray-50">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-sm">{config.icon}</span>
-          <span className="text-xs text-gray-600">System Status</span>
-        </div>
-        <button
-          onClick={onRefresh}
-          className="p-1 hover:bg-gray-200 rounded"
-          title="Refresh status"
-        >
-          <HiRefresh className="w-3 h-3 text-gray-500" />
-        </button>
-      </div>
-      <p className="text-xs text-gray-500 mt-1">{config.text}</p>
-    </div>
-  );
-});
 
 // ===============================
 
@@ -383,7 +311,7 @@ export const AppSidebar = memo<AppSidebarProps>(({
 
   const { history, loading: historyLoading, error: historyError, fetchTaskHistory } = useTaskHistory(userId);
   const { stats, loading: statsLoading, refreshStats } = useUserStats(userId);
-  const { health, checkHealth } = useSystemHealth();
+ 
 
   // Navigation items configuration
   const navigationItems: NavigationItem[] = useMemo(() => [
@@ -459,9 +387,34 @@ export const AppSidebar = memo<AppSidebarProps>(({
   }, [userId, fetchTaskHistory, refreshStats]);
 
   return (
-    <div className={`h-full bg-white shadow-lg transition-all duration-300 ${
+    <div className={`flex flex-col h-full bg-gray-50 shadow-lg transition-all duration-300 ${
       collapsed ? 'w-16' : 'w-64'
-    }`}>
+    }`} >
+      {/* Collapse Toggle Button */}
+        {onToggleCollapse && (
+          <div className="p-2 border-t" >
+            <button
+              onClick={onToggleCollapse}
+              className="w-full flex items-center justify-center p-1 rounded-lg transition-colors duration-200 border border-gray-300" style={{
+      background: `
+        radial-gradient(
+          circle at center,
+          rgba(255, 255, 255, 0.08) 0%,
+          rgba(255, 255, 255, 0.04) 20%,
+          rgba(0, 0, 0, 0.0) 60%
+        )
+      `,
+    }}
+              title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            >
+              <span className={`transform transition-transform duration-200 ${
+                collapsed ? 'rotate-180' : ''
+              }`}>
+                ←
+              </span>
+            </button>
+          </div>
+        )}
       <Sidebar 
         aria-label="Application Navigation" 
         className="h-full"
@@ -481,20 +434,10 @@ export const AppSidebar = memo<AppSidebarProps>(({
           <div className="p-4 border-b bg-gradient-to-r from-indigo-50 to-blue-50">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                <span className="text-blue-600">📍</span>
+                <span className="text-blue-600">👁️‍🗨️</span>
                 {currentPage}
               </h2>
-              <button
-                onClick={() => {
-                  refreshStats();
-                  fetchTaskHistory(30);
-                  checkHealth();
-                }}
-                className="p-2 hover:bg-white/70 rounded-lg transition-colors duration-200"
-                title="Refresh data"
-              >
-                <HiRefresh className={`w-4 h-4 text-gray-500 ${isLoading ? 'animate-spin' : ''}`} />
-              </button>
+              
             </div>
           </div>
         )}
@@ -567,43 +510,15 @@ export const AppSidebar = memo<AppSidebarProps>(({
                 )}
               </div>
               
-              {history.length > 10 && (
-                <div className="mt-3 text-center">
-                  <Link 
-                    to="/tasks"
-                    className="text-xs text-blue-600 hover:underline"
-                  >
-                    View all tasks →
-                  </Link>
-                </div>
-              )}
+             
             </div>
           </div>
         )}
 
         {/* System Status */}
-        <SystemStatus 
-          health={health}
-          onRefresh={checkHealth}
-          collapsed={collapsed}
-        />
+      
 
-        {/* Collapse Toggle Button */}
-        {onToggleCollapse && (
-          <div className="p-2 border-t">
-            <button
-              onClick={onToggleCollapse}
-              className="w-full flex items-center justify-center p-2 hover:bg-gray-50 rounded-lg transition-colors duration-200"
-              title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            >
-              <span className={`transform transition-transform duration-200 ${
-                collapsed ? 'rotate-180' : ''
-              }`}>
-                ←
-              </span>
-            </button>
-          </div>
-        )}
+        
       </Sidebar>
     </div>
   );
@@ -613,7 +528,6 @@ export const AppSidebar = memo<AppSidebarProps>(({
 LoadingSkeleton.displayName = 'LoadingSkeleton';
 TaskHistoryItem.displayName = 'TaskHistoryItem';
 UserProfile.displayName = 'UserProfile';
-SystemStatus.displayName = 'SystemStatus';
 AppSidebar.displayName = 'AppSidebar';
 
 export default AppSidebar;

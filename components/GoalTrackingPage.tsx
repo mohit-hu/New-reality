@@ -137,42 +137,44 @@ const GoalTrackingPage: React.FC<GoalTrackingPageProps> = ({ userId }) => {
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-6">
+    <div className=" p-6 space-y-6" style={{
+      background: "linear-gradient(120deg, #d5c5ff 0%, #a7f3d0 50%, #f0f0f0 100%)"
+    }}>
       {/* Header */}
-      <div className="bg-white rounded-xl shadow-lg p-6">
+      <div className="bg-gradient-to-br from-slate-800 to-slate-700 rounded-3xl shadow-2xl p-6 border border-purple-500/30">
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-800 mb-2 flex items-center gap-3">
-              <GoalIcon className="text-purple-600" size={32} />
+            <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
+              <GoalIcon className="text-purple-400" size={32} />
               Goal Tracking
             </h1>
-            <p className="text-gray-600 mb-4">Monitor your progress towards your new reality</p>
-            
+            <p className="text-slate-300 mb-4">Monitor your progress towards your new reality</p>
+
             <div className="space-y-2">
               <div>
-                <span className="text-sm font-medium text-gray-500">Your Goal:</span>
-                <p className="text-lg font-semibold text-gray-800">{goal.title}</p>
+                <span className="text-sm font-medium text-slate-400">Your Goal:</span>
+                <p className="text-lg font-semibold text-white">{goal.title}</p>
               </div>
               <div>
-                <span className="text-sm font-medium text-gray-500">Identity:</span>
-                <p className="text-base text-gray-700">{userProfile.identity}</p>
+                <span className="text-sm font-medium text-slate-400">Identity:</span>
+                <p className="text-base text-slate-200">{userProfile.identity}</p>
               </div>
             </div>
           </div>
-          
+
           <div className="text-right">
-            <div className="text-4xl font-bold text-purple-600">{overallProgress}%</div>
-            <div className="text-sm text-gray-500">7-day Average</div>
+            <div className="text-4xl font-bold text-purple-400">{overallProgress}%</div>
+            <div className="text-sm text-slate-400">7-day Average</div>
           </div>
         </div>
 
         {/* Progress Bar */}
         <div className="mt-6">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-sm font-medium text-gray-600">Overall Progress</span>
-            <span className="text-sm text-gray-500">{overallProgress}/100%</span>
+            <span className="text-sm font-medium text-slate-300">Overall Progress</span>
+            <span className="text-sm text-slate-400">{overallProgress}/100%</span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-3">
+          <div className="w-full bg-slate-700 rounded-full h-3">
             <div
               className={`h-3 rounded-full transition-all duration-500 ${getProgressBarColor(overallProgress)}`}
               style={{ width: `${overallProgress}%` }}
@@ -181,8 +183,8 @@ const GoalTrackingPage: React.FC<GoalTrackingPageProps> = ({ userId }) => {
         </div>
 
         {/* Motivational Message */}
-        <div className="mt-4 p-4 bg-purple-50 rounded-lg border border-purple-200">
-          <p className="text-center text-purple-800 font-medium">
+        <div className="mt-4 p-4 bg-slate-700/50 border border-slate-600/50 rounded-xl">
+          <p className="text-center text-purple-300 font-medium">
             {getMotivationalMessage(overallProgress)}
           </p>
         </div>
@@ -226,31 +228,31 @@ const GoalTrackingPage: React.FC<GoalTrackingPageProps> = ({ userId }) => {
       </div>
 
       {/* Progress Chart */}
-      <div className="bg-white rounded-xl shadow-lg p-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-          <TrendingUpIcon className="text-purple-600" />
+      <div className="bg-gradient-to-br from-slate-800 to-slate-700 rounded-3xl shadow-2xl p-6 border border-purple-500/30">
+        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+          <TrendingUpIcon className="text-purple-400" />
           Progress Trend (Last 30 Days)
         </h3>
-        
+
         <div className="grid grid-cols-7 gap-2">
           {progressData.slice(-21).map((data, _index) => (
             <div key={data.date} className="text-center">
               <div
-                className={`w-full h-16 rounded-lg flex items-end justify-center text-xs font-medium ${getProgressColor(data.completionRate)}`}
+                className={`w-full h-16 rounded-xl flex items-end justify-center text-xs font-medium bg-slate-700/50 border border-slate-600/50 relative`}
                 title={`${data.date}: ${data.completionRate}% (${data.completedTasks}/${data.totalTasks})`}
               >
                 <div
-                  className={`w-full rounded-lg ${getProgressBarColor(data.completionRate)} opacity-20`}
+                  className={`w-full rounded-xl ${getProgressBarColor(data.completionRate)} opacity-60`}
                   style={{ height: `${Math.max(data.completionRate, 10)}%` }}
                 ></div>
-                <span className=" text-xs font-bold">
+                <span className="text-white text-xs font-bold absolute">
                   {data.completionRate}%
                 </span>
               </div>
-              <div className="text-xs text-gray-500 mt-1">
-                {new Date(data.date).toLocaleDateString('en-US', { 
-                  month: 'short', 
-                  day: 'numeric' 
+              <div className="text-xs text-slate-400 mt-1">
+                {new Date(data.date).toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric'
                 })}
               </div>
             </div>
@@ -258,8 +260,6 @@ const GoalTrackingPage: React.FC<GoalTrackingPageProps> = ({ userId }) => {
         </div>
       </div>
 
-      {/* Task History */}
-      <TaskHistory userId={userId} days={14} />
     </div>
   );
 };

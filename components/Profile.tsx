@@ -29,7 +29,15 @@ const Profile: React.FC<ProfileProps> = ({ userProfile, goal }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+    <div className="min-h-screen " style={{
+     background: "white",
+     backgroundImage: `
+       linear-gradient(to right, rgba(71,85,105,0.3) 1px, transparent 1px),
+       linear-gradient(to bottom, rgba(71,85,105,0.3) 1px, transparent 1px),
+       radial-gradient(circle at 50% 50%, rgba(139,92,246,0.25) 0%, rgba(139,92,246,0.1) 40%, transparent 80%)
+     `,
+     backgroundSize: "32px 32px, 32px 32px, 100% 100%",
+   }}>
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-8">Profile</h1>
 

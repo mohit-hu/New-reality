@@ -66,39 +66,39 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
+      <div className="bg-gradient-to-br from-slate-800 to-slate-700 rounded-3xl shadow-2xl w-full  border border-purple-500/30 justify-center p-4">
         <div className="text-center mb-8">
-          <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+          <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
             <FiUser size={24} />
           </div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">
+          <h1 className="text-3xl font-bold text-white mb-2">
             Your Personal Growth Assistant
           </h1>
-          <p className="text-gray-600">
+          <p className="text-purple-200">
             {isSignUp ? 'Create your account to get started' : 'Welcome back! Sign in to continue'}
           </p>
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-            <p className="text-red-600 text-sm">{error}</p>
+          <div className="bg-red-900/30 border border-red-500/50 rounded-xl p-3 mb-4">
+            <p className="text-red-300 text-sm">{error}</p>
           </div>
         )}
 
         {/* Email/Password Form */}
         <form onSubmit={handleEmailLogin} className="space-y-6 mb-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-slate-300 mb-2">
               Email
             </label>
             <div className="relative">
-              <FiMail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+              <FiMail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={18} />
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-4 bg-slate-700/50 border border-slate-600/50 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white placeholder-slate-400 transition-all duration-200"
                 placeholder="Enter your email"
                 required
               />
@@ -106,16 +106,16 @@ const Login: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-slate-300 mb-2">
               Password
             </label>
             <div className="relative">
-              <FiLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+              <FiLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={18} />
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-4 bg-slate-700/50 border border-slate-600/50 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white placeholder-slate-400 transition-all duration-200"
                 placeholder="Enter your password"
                 required
                 minLength={6}
@@ -126,7 +126,7 @@ const Login: React.FC = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-3 rounded-xl font-semibold hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+            className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-4 rounded-xl font-semibold hover:shadow-lg hover:shadow-purple-500/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
           >
             {loading ? 'Processing...' : (isSignUp ? 'Create Account' : 'Sign In')}
           </button>
@@ -134,9 +134,9 @@ const Login: React.FC = () => {
 
         {/* Divider */}
         <div className="flex items-center justify-center mb-6">
-          <div className="border-t border-gray-300 flex-1"></div>
-          <span className="px-4 text-sm text-gray-500">or</span>
-          <div className="border-t border-gray-300 flex-1"></div>
+          <div className="border-t border-slate-600 flex-1"></div>
+          <span className="px-4 text-sm text-slate-400">or</span>
+          <div className="border-t border-slate-600 flex-1"></div>
         </div>
 
         {/* Social Login Buttons */}
@@ -144,7 +144,7 @@ const Login: React.FC = () => {
           <button
             onClick={signInWithGoogle}
             disabled={loading}
-            className="w-full bg-white border border-gray-300 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2"
+            className="w-full bg-slate-700/50 border border-slate-600/50 text-slate-300 py-4 rounded-xl font-semibold hover:bg-slate-700/70 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -158,7 +158,7 @@ const Login: React.FC = () => {
           <button
             onClick={signInAsGuest}
             disabled={loading}
-            className="w-full bg-gray-100 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+            className="w-full bg-slate-700/30 text-slate-400 py-4 rounded-xl font-semibold hover:bg-slate-700/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
           >
             Continue as Guest
           </button>
@@ -168,7 +168,7 @@ const Login: React.FC = () => {
         <div className="text-center">
           <button
             onClick={() => setIsSignUp(!isSignUp)}
-            className="text-purple-600 hover:text-purple-800 font-medium text-sm"
+            className="text-purple-400 hover:text-purple-300 font-medium text-sm transition-colors"
           >
             {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
           </button>
@@ -176,9 +176,9 @@ const Login: React.FC = () => {
 
         {/* Demo Info */}
         {!isSignUp && (
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-600 text-center mb-2">Quick Demo:</p>
-            <p className="text-xs text-gray-500 text-center">
+          <div className="mt-6 p-4 bg-slate-800/50 border border-slate-600/50 rounded-xl">
+            <p className="text-sm text-slate-300 text-center mb-2">Quick Demo:</p>
+            <p className="text-xs text-slate-400 text-center">
               Use "Continue as Guest" for instant access<br />
               or create account for data persistence
             </p>

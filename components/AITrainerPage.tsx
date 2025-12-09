@@ -114,13 +114,13 @@ Response Style:
 
 Based on their goal and profile, provide a helpful, motivational response as their personal trainer.`;
 
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const model = genAI.getGenerativeModel({model: "gemini-2.0-flash-lite", });
       const response = await model.generateContent({
         contents: [{ role: "user", parts: [{ text: prompt }] }],
         systemInstruction: { role: "system", parts: [{ text: systemInstruction }] },
       });
 
-      const trainerResponse = response.response.text();
+      const trainerResponse = (await response.response.text()).trim();
 
       const trainerMessage: Message = {
         id: `msg_${Date.now()}_trainer`,
@@ -240,7 +240,7 @@ Based on their goal and profile, provide a helpful, motivational response as the
 
       {/* Input Form */}
       <div className="p-4 bg-white border-t">
-        <form onSubmit={handleSubmit} className="flex space-x-2">
+        <form onSubmit={handleSubmit} className="flex space-x-2 h-full p-2">
           <Textarea
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}

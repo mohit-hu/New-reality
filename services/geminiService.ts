@@ -1,4 +1,4 @@
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { UserProfile, Goal, Task, GeminiDailyPlanResponse, DailyPlan } from '../types';
 
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
@@ -7,13 +7,13 @@ if (!API_KEY) {
     throw new Error("GEMINI_API_KEY environment variable not set in .env.local");
 }
 
-const ai = new GoogleGenAI({ apiKey: API_KEY });
+const ai = new GoogleGenerativeAI(API_KEY);
 
 // Enhanced rate limiting for free tier
 let lastRequestTime = 0;
-const MIN_REQUEST_INTERVAL = 5000; // 5 seconds between requests (12 per minute max)
+const MIN_REQUEST_INTERVAL = 4000; // 4 seconds between requests (15 per minute max)
 let requestCount = 0;
-const MAX_REQUESTS_PER_MINUTE = 12; // Conservative limit for free tier
+const MAX_REQUESTS_PER_MINUTE = 15; // Match the API's free tier limit
 const RATE_LIMIT_WINDOW = 60000; // 1 minute
 
 // Request queue for managing API calls
@@ -142,36 +142,8 @@ const handleAPIError = (error: any): string => {
     return '❌ AI service temporarily unavailable. Please try again later.';
 };
 
-const responseSchema = {
-    type: Type.OBJECT,
-    properties: {
-        gia: {
-            type: Type.OBJECT,
-            description: "The single Most Important Task (Greatest Impact Activity) for the day.",
-            properties: {
-                task: { type: Type.STRING, description: "The GIA task description. Must be actionable." },
-                reason: { type: Type.STRING, description: "A brief, encouraging reason why this task is the GIA." },
-            },
-            required: ['task', 'reason'],
-        },
-        otherTasks: {
-            type: Type.ARRAY,
-            description: "A list of 2 to 4 other small, supporting tasks for the day.",
-            items: {
-                type: Type.OBJECT,
-                properties: {
-                    task: { type: Type.STRING, description: "The supporting task description. Must be a small, actionable step." },
-                },
-                required: ['task'],
-            },
-        },
-        motivationalQuote: {
-            type: Type.STRING,
-            description: "A short, powerful motivational quote relevant to the user's goal or identity.",
-        },
-    },
-    required: ['gia', 'otherTasks', 'motivationalQuote'],
-};
+// Note: @google/generative-ai doesn't support responseSchema in the same way
+// We'll use text-based prompting instead
 
 export const getDailyPlan = async (profile: UserProfile, goal: Goal, previousDayTasks: string, previousDayReflection?: string): Promise<Task[]> => {
     
@@ -184,9 +156,22 @@ export const getDailyPlan = async (profile: UserProfile, goal: Goal, previousDay
     }
 
     const systemInstruction = `You are a human-centered AI assistant for self-improvement, acting as a personal coach. Your goal is to help a user build good habits and achieve their goals by providing daily, actionable suggestions.
-    
-    Your response MUST be in JSON format and adhere to the provided schema.
-    
+
+    Your response MUST be valid JSON with exactly this structure:
+    {
+        "gia": {
+            "task": "string - the most important task for today",
+            "reason": "string - why this is the greatest impact activity"
+        },
+        "otherTasks": [
+            {"task": "string - first additional task"},
+            {"task": "string - second additional task"}
+        ],
+        "motivationalQuote": "string - an inspiring quote or message"
+    }
+
+    IMPORTANT: Return ONLY the JSON object, no markdown formatting, no explanations, no additional text.
+
     Guiding Principles:
     1. **Identity-Based Habits:** Tasks should reinforce the user's desired identity.
     2. **Four Laws of Behavior Change:** Make tasks obvious, attractive, easy, and satisfying.
@@ -194,50 +179,73 @@ export const getDailyPlan = async (profile: UserProfile, goal: Goal, previousDay
     4. **Simplicity:** Tasks should be small, clear actions, not complex projects.
     5. **Context is Key:** Use the user's goal, identity, and context to create personalized plans.`;
 
-    const prompt = `
-        User Profile:
-        - Goal (New Reality): "${goal.title}"
-        - Desired Identity: "${profile.identity}"
-        - Context: "${profile.context || 'Not specified'}"
+    const prompt = `Generate a daily plan for today based on this user profile:
 
-        Previous Day's Plan & Status:
-        ${previousDayTasks || 'No previous tasks recorded.'}
-        ${previousDayReflection ? `\nPrevious Day's Reflection:\n${previousDayReflection}` : ''}
+User Profile:
+- Goal (New Reality): "${goal.title}"
+- Desired Identity: "${profile.identity}"
+- Context: "${profile.context || 'Not specified'}"
 
-        Based on all the information above, generate a new daily plan for today.
-    `;
+Previous Day's Plan & Status:
+${previousDayTasks || 'No previous tasks recorded.'}
+${previousDayReflection ? `\nPrevious Day's Reflection:\n${previousDayReflection}` : ''}
+
+Return ONLY a JSON object with this exact structure:
+{
+    "gia": {
+        "task": "the most important task for today",
+        "reason": "why this is the greatest impact activity"
+    },
+    "otherTasks": [
+        {"task": "first supporting task"},
+        {"task": "second supporting task"},
+        {"task": "third supporting task"},
+        {"task": "fourth supporting task"}
+    ],
+    "motivationalQuote": "an inspiring quote or message"
+}
+
+IMPORTANT: Generate exactly 4 supporting tasks in the otherTasks array.`;
     
     try {
         return await retryWithBackoff(async () => {
             console.log('🤖 Generating daily plan with Gemini AI...');
             
-            const response = await ai.models.generateContent({
-                model: "gemini-1.5-flash", // Most cost-effective model
-                contents: prompt,
-                config: {
-                    systemInstruction: systemInstruction,
-                    responseMimeType: "application/json",
-                    responseSchema: responseSchema,
-                    temperature: 0.8,
-                },
+            const model = ai.getGenerativeModel({
+              model: "gemini-2.0-flash-lite",
+                systemInstruction: systemInstruction,
             });
 
-            if (!response || !response.text) {
+            const result = await model.generateContent(prompt);
+            const response = await result.response;
+
+            if (!response) {
                 throw new Error('Empty response from Gemini API');
             }
 
-            const jsonText = response.text.trim();
+            let jsonText = (await response.text()).trim();
+
+            // Handle markdown code blocks that some models return
+            if (jsonText.startsWith('```json')) {
+                jsonText = jsonText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+            } else if (jsonText.startsWith('```')) {
+                jsonText = jsonText.replace(/^```\s*/, '').replace(/\s*```$/, '');
+            }
+
             let planData: GeminiDailyPlanResponse;
-            
+
             try {
                 planData = JSON.parse(jsonText) as GeminiDailyPlanResponse;
             } catch (parseError) {
                 console.error('JSON Parse Error:', parseError);
+                console.error('Raw response:', jsonText);
                 throw new Error('Invalid response format from AI');
             }
 
+            console.log('Parsed plan data:', planData);
+
             const tasks: Task[] = [];
-            
+
             if (planData.gia?.task) {
                 tasks.push({
                     id: `task_${Date.now()}_gia`,
@@ -246,7 +254,7 @@ export const getDailyPlan = async (profile: UserProfile, goal: Goal, previousDay
                     isGIA: true,
                 });
             }
-            
+
             if (Array.isArray(planData.otherTasks)) {
                 planData.otherTasks.forEach((t, index) => {
                     if (t?.task) {
@@ -269,7 +277,10 @@ export const getDailyPlan = async (profile: UserProfile, goal: Goal, previousDay
                 });
             }
 
+            console.log('Generated tasks:', tasks);
+
             if (tasks.length === 0) {
+                console.error('No tasks generated. Plan data structure:', planData);
                 throw new Error('No valid tasks generated');
             }
 
@@ -312,21 +323,20 @@ export const getReflectionResponse = async (profile: UserProfile, goal: Goal, da
         return await retryWithBackoff(async () => {
             console.log('💭 Getting reflection response from Gemini AI...');
             
-            const response = await ai.models.generateContent({
-                model: "gemini-1.5-flash",
-                contents: prompt,
-                config: {
-                    systemInstruction: systemInstruction,
-                    temperature: 0.7,
-                },
+            const model = ai.getGenerativeModel({
+                model: "gemini-2.0-flash-lite",
+                systemInstruction: systemInstruction,
             });
 
-            if (!response || !response.text) {
+            const result = await model.generateContent(prompt);
+            const response = await result.response;
+
+            if (!response) {
                 throw new Error('Empty response from Gemini API');
             }
 
             console.log('✅ Reflection response generated successfully!');
-            return response.text.trim();
+            return (await response.text()).trim();
         });
 
     } catch (error) {
@@ -344,7 +354,7 @@ export const getReflectionResponse = async (profile: UserProfile, goal: Goal, da
         const randomResponse = fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
         
         // Add quota warning if it's a quota error
-        if (error.message?.includes('quota') || error.message?.includes('429')) {
+        if ((error as any)?.message?.includes('quota') || (error as any)?.message?.includes('429')) {
             return `${randomResponse} \n\n⚠️ Note: Free tier quota limit reached. Consider upgrading for unlimited responses.`;
         }
         
