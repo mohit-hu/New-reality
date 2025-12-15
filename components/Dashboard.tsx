@@ -7,6 +7,7 @@ import { ButtonLoader } from './LoadingSpinner';
 import { SparklesIcon, ChatIcon, RefreshIcon } from './Icons';
 
 interface DashboardProps {
+  userId: string;
   goal: Goal;
   userProfile: UserProfile;
   dailyPlan: DailyPlan | null;
@@ -17,6 +18,7 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({
+  userId,
   goal,
   userProfile,
   dailyPlan,
@@ -41,18 +43,12 @@ const Dashboard: React.FC<DashboardProps> = ({
       const response = await getReflectionResponse(userProfile, goal, dailyPlan, reflection);
       setReflectionResponse(response);
 
-      // Save reflection to database - we'll need to get userId from props or context
-      // For now, let's assume we can get it from auth
-      const { auth } = await import('../firebase');
-      const user = auth.currentUser;
-      if (user) {
-        const today = new Date().toISOString().split('T')[0];
-        await saveDailyReflection(user.uid, today, {
-          reflection: reflection,
-          response: response
-        });
-        console.log('Reflection saved');
-      }
+      const today = new Date().toISOString().split('T')[0];
+      await saveDailyReflection(userId, today, {
+        reflection: reflection,
+        response: response
+      });
+      console.log('Reflection saved');
     } catch (error) {
       console.error('Error getting reflection response:', error);
       setReflectionResponse('Thank you for sharing your thoughts. Keep up the great work! 💪');
