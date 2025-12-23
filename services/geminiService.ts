@@ -9,71 +9,36 @@ if (!API_KEY) {
 
 const ai = new GoogleGenerativeAI(API_KEY);
 
-// Enhanced rate limiting for free tier
-let lastRequestTime = 0;
-const MIN_REQUEST_INTERVAL = 4000; // 4 seconds between requests (15 per minute max)
-let requestCount = 0;
-const MAX_REQUESTS_PER_MINUTE = 15; // Match the API's free tier limit
-const RATE_LIMIT_WINDOW = 60000; // 1 minute
+// Sliding window rate limiting to not exceed API quotas
+const MAX_REQUESTS_PER_MINUTE = 15; // As per Gemini API free tier
+const RATE_LIMIT_WINDOW = 60000; // 1 minute in milliseconds
+const requestTimestamps: number[] = [];
 
-// Request queue for managing API calls
-const requestQueue: Array<() => Promise<any>> = [];
-let isProcessingQueue = false;
-
-// Enhanced delay utility
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-// Rate limiting function
 const rateLimitedRequest = async <T>(requestFn: () => Promise<T>): Promise<T> => {
-    return new Promise((resolve, reject) => {
-        requestQueue.push(async () => {
-            try {
-                // Check if we need to wait between requests
-                const now = Date.now();
-                const timeSinceLastRequest = now - lastRequestTime;
-                
-                if (timeSinceLastRequest < MIN_REQUEST_INTERVAL) {
-                    const waitTime = MIN_REQUEST_INTERVAL - timeSinceLastRequest;
-                    console.log(`Rate limiting: waiting ${waitTime}ms before next request`);
-                    await delay(waitTime);
-                }
-                
-                // Update request tracking
-                lastRequestTime = Date.now();
-                requestCount++;
-                
-                // Reset counter every minute
-                setTimeout(() => requestCount--, RATE_LIMIT_WINDOW);
-                
-                const result = await requestFn();
-                resolve(result);
-            } catch (error) {
-                reject(error);
-            }
-        });
-        
-        processQueue();
-    });
-};
+    const now = Date.now();
 
-// Queue processor
-const processQueue = async () => {
-    if (isProcessingQueue || requestQueue.length === 0) return;
-    
-    isProcessingQueue = true;
-    
-    while (requestQueue.length > 0) {
-        const requestFn = requestQueue.shift();
-        if (requestFn) {
-            try {
-                await requestFn();
-            } catch (error) {
-                console.error('Queue processing error:', error);
-            }
-        }
+    // Remove timestamps that are outside the 1-minute window
+    while (requestTimestamps.length > 0 && now - requestTimestamps[0] > RATE_LIMIT_WINDOW) {
+        requestTimestamps.shift();
     }
-    
-    isProcessingQueue = false;
+
+    // If the number of requests in the last minute exceeds the limit, wait.
+    if (requestTimestamps.length >= MAX_REQUESTS_PER_MINUTE) {
+        const oldestRequestTime = requestTimestamps[0];
+        const timeToWait = (RATE_LIMIT_WINDOW - (now - oldestRequestTime)) + 1000; // Wait until the oldest request expires + 1s buffer
+
+        console.warn(`Rate limit exceeded. Waiting for ${timeToWait / 1000} seconds...`);
+        await delay(timeToWait);
+
+        // After waiting, re-run the check
+        return rateLimitedRequest(requestFn);
+    }
+
+    // Record the timestamp of the new request
+    requestTimestamps.push(now);
+    return requestFn();
 };
 
 // Enhanced retry with exponential backoff and quota handling
