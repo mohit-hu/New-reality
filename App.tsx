@@ -281,7 +281,7 @@ const App: React.FC = () => {
 
         {/* Main Content */}
         <main className={`flex-1 overflow-auto ${
-          state.user ? (isSidebarCollapsed ? 'h-full'  : 'h-full') : ''
+          state.user ? (isSidebarCollapsed ? 'ml mr hfull'  : 'ml mr h-full') : ''
         }`}>
           <Routes>
             <Route
