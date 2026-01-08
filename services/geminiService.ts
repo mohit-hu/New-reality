@@ -177,7 +177,7 @@ IMPORTANT: Generate exactly 4 supporting tasks in the otherTasks array.`;
             console.log('🤖 Generating daily plan with Gemini AI...');
             
             const model = ai.getGenerativeModel({
-              model: "gemini-2.0-flash-lite",
+              model: "gemini-3-flash-preview ",
                 systemInstruction: systemInstruction,
             });
 
